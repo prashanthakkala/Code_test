@@ -1,52 +1,27 @@
 import pdfplumber
-import pandas as pd
+from docx import Document
 
-def extract_tables_with_bottom_check_v2(pdf_path):
-    tables_list = []
+def convert_pdf_to_word(pdf_path, docx_path):
+    # Create a new Document
+    doc = Document()
 
     with pdfplumber.open(pdf_path) as pdf:
         for page_num, page in enumerate(pdf.pages):
-            # Extract tables using pdfplumber
-            tables = page.extract_tables()
-            page_height = page.height
+            # Extract text from the page
+            text = page.extract_text()
 
-            # Extract text from the bottom 50 pixels of the page
-            bottom_margin = 50  # Adjust this value if necessary
-            last_row_bbox = (0, page_height - bottom_margin, page.width, page_height)
-            last_row_text = page.within_bbox(last_row_bbox).extract_text()
-            
-            # Convert the extracted text into a list of words
-            last_row = last_row_text.split() if last_row_text else []
+            if text:
+                # Add text to the Word document
+                doc.add_paragraph(text)
+                
+                # Add a page break after each page (optional)
+                if page_num < len(pdf.pages) - 1:
+                    doc.add_page_break()
 
-            for table in tables:
-                # Convert table to DataFrame
-                df = pd.DataFrame(table)
-                # Add page number to the DataFrame
-                df['Page'] = page_num + 1
-
-                # Check if the last row content is missing and append it if necessary
-                if last_row:
-                    # Ensure last_row matches the table's number of columns
-                    if len(last_row) == df.shape[1] - 1:  # Minus 1 for the 'Page' column
-                        # Append the page number to the last row data
-                        last_row.append(page_num + 1)
-                        # Add the missing last row to the DataFrame
-                        df = df.append(pd.Series(last_row, index=df.columns), ignore_index=True)
-                    elif len(last_row) < df.shape[1] - 1:
-                        # If the last row has fewer columns, assume it's part of a multi-line row
-                        # and combine it with the previous row
-                        combined_row = df.iloc[-1, :-1].tolist() + last_row
-                        df.iloc[-1, :-1] = combined_row[:df.shape[1] - 1]  # Update the last row
-                        
-                tables_list.append(df)
-
-    # Combine all DataFrames into one
-    final_df = pd.concat(tables_list, ignore_index=True)
-    return final_df
+    # Save the Document
+    doc.save(docx_path)
 
 # Usage
 pdf_path = "your_pdf_file.pdf"
-tables_df = extract_tables_with_bottom_check_v2(pdf_path)
-
-# Display the combined DataFrame
-print(tables_df)
+docx_path = "output_file.docx"
+convert_pdf_to_word(pdf_path, docx_path)
