@@ -1,2 +1,40 @@
 ###############################
-Hello
+
+import pdfplumber
+import pandas as pd
+
+def extract_tables_with_page_info(pdf_path):
+    tables_list = []
+
+    with pdfplumber.open(pdf_path) as pdf:
+        for page_num, page in enumerate(pdf.pages):
+            # Extract tables
+            tables = page.extract_tables()
+            page_height = page.height
+            
+            # Get any potential row that could be missed at the bottom of the page
+            last_row_bbox = (0, page_height - 20, page.width, page_height)
+            last_row_text = page.within_bbox(last_row_bbox).extract_text()
+            last_row = last_row_text.split('\n') if last_row_text else []
+
+            for table in tables:
+                # Convert each table to a DataFrame
+                df = pd.DataFrame(table)
+                # Append page number to the DataFrame
+                df['Page'] = page_num + 1
+                # If there's a last row, append it as well
+                if last_row and not df.iloc[-1].equals(pd.Series(last_row)):
+                    df = df.append(pd.Series(last_row, index=df.columns), ignore_index=True)
+                tables_list.append(df)
+
+    # Combine all DataFrames into one
+    final_df = pd.concat(tables_list, ignore_index=True)
+    return final_df
+
+# Usage
+pdf_path = "your_pdf_file.pdf"
+tables_df = extract_tables_with_page_info(pdf_path)
+
+# Display the combined DataFrame
+print(tables_df)
+
