@@ -28,26 +28,31 @@ with pdfplumber.open("example.pdf") as pdf:
             "min_words_horizontal": 1
         })
 
-        # Identify the bottom Y-coordinate of the last table's last row
-        last_table_bottom_y = 0
-        if tables:
-            for table in tables:
-                if table:
-                    words = page.extract_words()
-                    if words:
-                        last_table_bottom_y = max(word['bottom'] for word in words)
+        # Extract all text on the page
+        all_text = page.extract_text(laparams=laparams)
 
-        # Extract all text lines on the page
-        all_text = page.extract_text(laparams=laparams).splitlines()
+        # Extract words from tables to identify the text inside tables
+        table_texts = []
+        for table in tables:
+            if table:
+                for row in table[1:]:  # Skip the header row
+                    table_texts.extend(row)
 
-        # Extract text rows that appear after the last table
-        remaining_text = []
-        for word in page.extract_words():
-            if word['bottom'] > last_table_bottom_y:
-                remaining_text.append(word['text'])
+        # Convert the table text list to a set for faster lookup
+        table_text_set = set(table_texts)
 
-        # Join remaining text into a single string, one per row
-        remaining_text_str = ' '.join(remaining_text)
+        # Split the full text into lines
+        all_text_lines = all_text.splitlines()
+
+        # Filter out lines that are part of the table
+        remaining_text_lines = []
+        for line in all_text_lines:
+            # Only keep lines that are not part of the table
+            if not any(word in line for word in table_text_set):
+                remaining_text_lines.append(line)
+
+        # Join remaining text lines into a single string
+        remaining_text_str = "\n".join(remaining_text_lines)
 
         # Convert the last table to a DataFrame
         if tables:
@@ -55,13 +60,13 @@ with pdfplumber.open("example.pdf") as pdf:
         else:
             df_table = pd.DataFrame()
 
-        # If there is remaining text, add it as the last row of the DataFrame
-        if not df_table.empty and remaining_text:
-            # Create a new row with the remaining text in a new "Remaining Text" column
-            df_text_row = pd.DataFrame([["" for _ in range(len(df_table.columns))] + [remaining_text_str]],
-                                       columns=list(df_table.columns) + ["Remaining Text"])
-            df_table = pd.concat([df_table, df_text_row], ignore_index=True)
-        elif remaining_text:
+        # If there is remaining text, add it as a new column in the DataFrame
+        if not df_table.empty and remaining_text_lines:
+            # Create a new DataFrame with the remaining text in a new "Remaining Text" column
+            df_text = pd.DataFrame([["" for _ in range(len(df_table.columns))] + [remaining_text_str]],
+                                   columns=list(df_table.columns) + ["Remaining Text"])
+            df_table = pd.concat([df_table, df_text], ignore_index=True)
+        elif remaining_text_lines:
             # If no table, just create a DataFrame with the remaining text
             df_table = pd.DataFrame([[remaining_text_str]], columns=["Remaining Text"])
 
