@@ -20,3 +20,17 @@ with pdfplumber.open(pdf_path) as pdf:
                     print(row)
         else:
             print(f"Page {page_number} does not contain any tables.")
+import pandas as pd
+
+# Open the PDF file
+with pdfplumber.open(pdf_path) as pdf:
+    for page_number, page in enumerate(pdf.pages, start=1):
+        tables = page.extract_tables()
+        
+        if tables:
+            for i, table in enumerate(tables, start=1):
+                df = pd.DataFrame(table)
+                csv_filename = f"table_{page_number}_{i}.csv"
+                df.to_csv(csv_filename, index=False, header=False)
+                print(f"Saved Table {i} from Page {page_number} as {csv_filename}")
+
