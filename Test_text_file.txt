@@ -1,7 +1,5 @@
 import pdfplumber
 from docx import Document
-from docx.oxml.ns import qn
-from docx.shared import Inches
 
 def convert_pdf_to_word(pdf_path, docx_path):
     try:
@@ -18,13 +16,22 @@ def convert_pdf_to_word(pdf_path, docx_path):
 
                 # Extract tables from the page
                 tables = page.extract_tables()
-                for table in tables:
-                    # Add table to Word document
-                    word_table = doc.add_table(rows=0, cols=len(table[0]))
-                    for row in table:
-                        cells = word_table.add_row().cells
-                        for i, cell in enumerate(row):
-                            cells[i].text = cell
+                
+                # Check if tables is None or empty
+                if tables:
+                    for table in tables:
+                        if table:  # Ensure table is not None or empty
+                            # Add table to Word document
+                            word_table = doc.add_table(rows=0, cols=len(table[0]))
+                            for row in table:
+                                cells = word_table.add_row().cells
+                                for i, cell in enumerate(row):
+                                    if cell:  # Ensure cell content is not None
+                                        cells[i].text = cell
+                        else:
+                            print(f"Empty table detected on page {page_num + 1}.")
+                else:
+                    print(f"No tables found on page {page_num + 1}.")
 
                 # Add a page break after each page (optional)
                 if page_num < len(pdf.pages) - 1:
