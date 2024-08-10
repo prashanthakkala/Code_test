@@ -10,18 +10,8 @@ laparams = LAParams(
     boxes_flow=0.5
 )
 
-def is_nearby(y1, y2, tolerance=10):
-    """Check if two y-coordinates are within a given tolerance."""
-    return abs(y1 - y2) <= tolerance
-
-def merge_last_row_with_table(table, last_row):
-    """Merge the last row with the last detected table."""
-    if table and last_row:
-        table.append(last_row)
-    return table
-
-# Initialize an empty list to store tables
-all_tables = []
+# Initialize an empty list to store DataFrames from each page
+all_data = []
 
 # Open the PDF file
 with pdfplumber.open("example.pdf") as pdf:
@@ -38,28 +28,48 @@ with pdfplumber.open("example.pdf") as pdf:
             "min_words_horizontal": 1
         })
 
-        # Extract the last row on the page (as text)
-        text_rows = page.extract_text(laparams=laparams).splitlines()
-        last_row = text_rows[-1] if text_rows else None
+        # Identify the bottom Y-coordinate of the last table's last row
+        last_table_bottom_y = 0
+        if tables:
+            for table in tables:
+                if table:
+                    words = page.extract_words()
+                    if words:
+                        last_table_bottom_y = max(word['bottom'] for word in words)
 
-        if tables and last_row:
-            # Get the Y-coordinate of the last row
-            last_row_y = float(page.within_bbox((0, page.height - 20, page.width, page.height)).extract_text().split()[-1])
-            
-            # Get the bounding box of the last table
-            last_table_bbox = page.extract_words()[0]['bottom'] if page.extract_words() else 0
+        # Extract all text lines on the page
+        all_text = page.extract_text(laparams=laparams).splitlines()
 
-            # Check if the last row is near the table
-            if is_nearby(last_table_bbox, last_row_y):
-                tables[-1] = merge_last_row_with_table(tables[-1], [last_row])
+        # Extract text rows that appear after the last table
+        remaining_text = []
+        for word in page.extract_words():
+            if word['bottom'] > last_table_bottom_y:
+                remaining_text.append(word['text'])
 
-        # Convert each table to a DataFrame and add to all_tables
-        for table in tables:
-            df = pd.DataFrame(table[1:], columns=table[0])  # Assuming the first row is the header
-            all_tables.append(df)
+        # Join remaining text into a single string, one per row
+        remaining_text_str = ' '.join(remaining_text)
 
-# Combine all tables into a single DataFrame
-combined_df = pd.concat(all_tables, ignore_index=True)
+        # Convert the last table to a DataFrame
+        if tables:
+            df_table = pd.DataFrame(tables[-1][1:], columns=tables[-1][0])  # Assuming the first row is the header
+        else:
+            df_table = pd.DataFrame()
+
+        # If there is remaining text, add it as the last row of the DataFrame
+        if not df_table.empty and remaining_text:
+            # Create a new row with the remaining text in a new "Remaining Text" column
+            df_text_row = pd.DataFrame([["" for _ in range(len(df_table.columns))] + [remaining_text_str]],
+                                       columns=list(df_table.columns) + ["Remaining Text"])
+            df_table = pd.concat([df_table, df_text_row], ignore_index=True)
+        elif remaining_text:
+            # If no table, just create a DataFrame with the remaining text
+            df_table = pd.DataFrame([[remaining_text_str]], columns=["Remaining Text"])
+
+        # Append the DataFrame to the list
+        all_data.append(df_table.reset_index(drop=True))
+
+# Combine all DataFrames into a single DataFrame
+combined_df = pd.concat(all_data, ignore_index=True)
 
 # Output the combined DataFrame
 print(combined_df)
