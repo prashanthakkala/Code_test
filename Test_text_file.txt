@@ -1,49 +1,18 @@
-import pdfplumber
-from docx import Document
+from pdf2docx import Converter
 
-def convert_pdf_to_word(pdf_path, docx_path):
-    try:
-        # Create a new Document
-        doc = Document()
+# Path to the PDF file you want to convert
+pdf_file = 'input.pdf'
 
-        with pdfplumber.open(pdf_path) as pdf:
-            for page_num, page in enumerate(pdf.pages):
-                # Extract text from the page
-                text = page.extract_text()
-                if text:
-                    # Add text to the Word document
-                    doc.add_paragraph(text)
+# Path where you want to save the Word document
+word_file = 'output.docx'
 
-                # Extract tables from the page
-                tables = page.extract_tables()
-                
-                # Check if tables is None or empty
-                if tables:
-                    for table in tables:
-                        if table:  # Ensure table is not None or empty
-                            # Add table to Word document
-                            word_table = doc.add_table(rows=0, cols=len(table[0]))
-                            for row in table:
-                                cells = word_table.add_row().cells
-                                for i, cell in enumerate(row):
-                                    if cell:  # Ensure cell content is not None
-                                        cells[i].text = cell
-                        else:
-                            print(f"Empty table detected on page {page_num + 1}.")
-                else:
-                    print(f"No tables found on page {page_num + 1}.")
+# Create a Converter object
+converter = Converter(pdf_file)
 
-                # Add a page break after each page (optional)
-                if page_num < len(pdf.pages) - 1:
-                    doc.add_page_break()
+# Convert the PDF to Word
+converter.convert(word_file, start=0, end=None)
 
-        # Save the Document
-        doc.save(docx_path)
-        print(f"PDF successfully converted to Word document at: {docx_path}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+# Close the Converter object
+converter.close()
 
-# Usage
-pdf_path = "your_pdf_file.pdf"
-docx_path = "output_file.docx"
-convert_pdf_to_word(pdf_path, docx_path)
+print(f'Conversion completed! The Word file is saved as {word_file}')
