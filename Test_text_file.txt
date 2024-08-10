@@ -1,25 +1,40 @@
 import pdfplumber
 from docx import Document
+from docx.oxml.ns import qn
+from docx.shared import Inches
 
 def convert_pdf_to_word(pdf_path, docx_path):
-    # Create a new Document
-    doc = Document()
+    try:
+        # Create a new Document
+        doc = Document()
 
-    with pdfplumber.open(pdf_path) as pdf:
-        for page_num, page in enumerate(pdf.pages):
-            # Extract text from the page
-            text = page.extract_text()
+        with pdfplumber.open(pdf_path) as pdf:
+            for page_num, page in enumerate(pdf.pages):
+                # Extract text from the page
+                text = page.extract_text()
+                if text:
+                    # Add text to the Word document
+                    doc.add_paragraph(text)
 
-            if text:
-                # Add text to the Word document
-                doc.add_paragraph(text)
-                
+                # Extract tables from the page
+                tables = page.extract_tables()
+                for table in tables:
+                    # Add table to Word document
+                    word_table = doc.add_table(rows=0, cols=len(table[0]))
+                    for row in table:
+                        cells = word_table.add_row().cells
+                        for i, cell in enumerate(row):
+                            cells[i].text = cell
+
                 # Add a page break after each page (optional)
                 if page_num < len(pdf.pages) - 1:
                     doc.add_page_break()
 
-    # Save the Document
-    doc.save(docx_path)
+        # Save the Document
+        doc.save(docx_path)
+        print(f"PDF successfully converted to Word document at: {docx_path}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 # Usage
 pdf_path = "your_pdf_file.pdf"
