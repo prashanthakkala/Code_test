@@ -32,22 +32,21 @@ with pdfplumber.open("example.pdf") as pdf:
         text_rows = page.extract_text(laparams=laparams).splitlines()
 
         # Identify the last table's bounding box (bottom y-coordinate)
+        last_table_bbox = 0
         if tables:
-            last_table_bbox = None
+            # Attempt to get the Y-coordinate of the bottom of the last cell of the last table
             for table in tables:
-                if table and len(table) > 0:
-                    # Get the Y-coordinate of the bottom of the last cell of the last row of the last table
-                    last_table_bbox = page.extract_words()[-1]['bottom'] if page.extract_words() else 0
+                if table:
+                    words = page.extract_words()
+                    if words:
+                        last_table_bbox = max(word['bottom'] for word in words)
                     break
-        else:
-            last_table_bbox = 0
 
         # Extract text rows that appear after the last table
         remaining_text = []
-        if last_table_bbox is not None:
-            for word in page.extract_words():
-                if word['bottom'] > last_table_bbox:
-                    remaining_text.append(word['text'])
+        for word in page.extract_words():
+            if word['bottom'] > last_table_bbox:
+                remaining_text.append(word['text'])
 
         # Convert tables to DataFrames and add to all_data
         for table in tables:
@@ -56,7 +55,8 @@ with pdfplumber.open("example.pdf") as pdf:
 
         # If there are remaining text rows, convert to DataFrame and add to all_data
         if remaining_text:
-            df_remaining_text = pd.DataFrame([remaining_text], columns=["Remaining Text"])
+            # Each word is treated as a separate entry in the "Remaining Text" column
+            df_remaining_text = pd.DataFrame(remaining_text, columns=["Remaining Text"])
             all_data.append(df_remaining_text.reset_index(drop=True))  # Ensure unique indices
 
 # Combine all DataFrames into a single DataFrame
