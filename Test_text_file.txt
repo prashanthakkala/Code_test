@@ -1,80 +1,63 @@
 import pdfplumber
-from pdfminer.layout import LAParams
 import pandas as pd
 
-# Define LAParams with custom values
-laparams = LAParams(
-    char_margin=2.0,
-    line_margin=0.5,
-    word_margin=0.1,
-    boxes_flow=0.5
-)
-
-# Initialize an empty list to store DataFrames from each page
-all_data = []
-
-# Open the PDF file
-with pdfplumber.open("example.pdf") as pdf:
-    for page_num, page in enumerate(pdf.pages):
-        # Extract tables
-        tables = page.extract_tables({
-            "vertical_strategy": "lines",
-            "horizontal_strategy": "lines",
-            "intersection_tolerance": 5,
-            "snap_tolerance": 3,
-            "join_tolerance": 3,
-            "edge_min_length": 10,
-            "min_words_vertical": 1,
-            "min_words_horizontal": 1
+def extract_text_blocks(page):
+    # Extract text blocks and their positions
+    text_blocks = []
+    for element in page.extract_words():
+        text_blocks.append({
+            'text': element['text'],
+            'x0': element['x0'],
+            'x1': element['x1'],
+            'y0': element['y0'],
+            'y1': element['y1']
         })
+    return text_blocks
 
-        # Extract all text on the page
-        all_text = page.extract_text(laparams=laparams)
+def group_text_blocks(text_blocks, vertical_tolerance=5, horizontal_tolerance=5):
+    rows = []
+    current_row = []
+    last_y0 = None
 
-        # Extract words from tables to identify the text inside tables
-        table_texts = []
-        for table in tables:
-            if table:
-                for row in table[1:]:  # Skip the header row
-                    table_texts.extend(row)
+    for block in text_blocks:
+        if last_y0 is not None and abs(block['y0'] - last_y0) > vertical_tolerance:
+            # End of the current row
+            rows.append(current_row)
+            current_row = []
+        current_row.append(block['text'])
+        last_y0 = block['y0']
 
-        # Convert the table text list to a set for faster lookup
-        table_text_set = set(table_texts)
+    # Append the last row
+    if current_row:
+        rows.append(current_row)
 
-        # Split the full text into lines
-        all_text_lines = all_text.splitlines()
+    return rows
 
-        # Filter out lines that are part of the table
-        remaining_text_lines = []
-        for line in all_text_lines:
-            # Only keep lines that are not part of the table
-            if not any(word in line for word in table_text_set):
-                remaining_text_lines.append(line)
+def process_table_data(rows):
+    # Convert rows to DataFrame
+    df = pd.DataFrame(rows)
+    
+    # Optionally, set column names if known
+    # df.columns = ['Column1', 'Column2', 'Column3']
+    
+    return df
 
-        # Join remaining text lines into a single string
-        remaining_text_str = "\n".join(remaining_text_lines)
+def extract_and_process_tables(pdf_path):
+    with pdfplumber.open(pdf_path) as pdf:
+        all_tables = []
+        for page in pdf.pages:
+            text_blocks = extract_text_blocks(page)
+            rows = group_text_blocks(text_blocks)
+            df = process_table_data(rows)
+            all_tables.append(df)
+    
+    return all_tables
 
-        # Convert the last table to a DataFrame
-        if tables:
-            df_table = pd.DataFrame(tables[-1][1:], columns=tables[-1][0])  # Assuming the first row is the header
-        else:
-            df_table = pd.DataFrame()
+# Example usage
+pdf_path = "your_pdf_file.pdf"
+tables = extract_and_process_tables(pdf_path)
 
-        # If there is remaining text, add it as a new column in the DataFrame
-        if not df_table.empty and remaining_text_lines:
-            # Create a new DataFrame with the remaining text in a new "Remaining Text" column
-            df_text = pd.DataFrame([["" for _ in range(len(df_table.columns))] + [remaining_text_str]],
-                                   columns=list(df_table.columns) + ["Remaining Text"])
-            df_table = pd.concat([df_table, df_text], ignore_index=True)
-        elif remaining_text_lines:
-            # If no table, just create a DataFrame with the remaining text
-            df_table = pd.DataFrame([[remaining_text_str]], columns=["Remaining Text"])
-
-        # Append the DataFrame to the list
-        all_data.append(df_table.reset_index(drop=True))
-
-# Combine all DataFrames into a single DataFrame
-combined_df = pd.concat(all_data, ignore_index=True)
-
-# Output the combined DataFrame
-print(combined_df)
+# Display the extracted tables
+for idx, table in enumerate(tables):
+    print(f"Table {idx + 1}:")
+    print(table)
