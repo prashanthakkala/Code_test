@@ -1,7 +1,7 @@
 import pdfplumber
 import pandas as pd
 
-def extract_tables_with_advanced_bottom_check(pdf_path):
+def extract_tables_with_bottom_check_v2(pdf_path):
     tables_list = []
 
     with pdfplumber.open(pdf_path) as pdf:
@@ -9,13 +9,14 @@ def extract_tables_with_advanced_bottom_check(pdf_path):
             # Extract tables using pdfplumber
             tables = page.extract_tables()
             page_height = page.height
-            
-            # Extract lines of text from the bottom of the page
-            bottom_margin = 50  # Adjust this margin as needed
-            last_rows_text = page.crop((0, page_height - bottom_margin, page.width, page_height)).extract_text()
 
-            if last_rows_text:
-                last_rows_lines = last_rows_text.split('\n')
+            # Extract text from the bottom 50 pixels of the page
+            bottom_margin = 50  # Adjust this value if necessary
+            last_row_bbox = (0, page_height - bottom_margin, page.width, page_height)
+            last_row_text = page.within_bbox(last_row_bbox).extract_text()
+            
+            # Convert the extracted text into a list of words
+            last_row = last_row_text.split() if last_row_text else []
 
             for table in tables:
                 # Convert table to DataFrame
@@ -23,16 +24,20 @@ def extract_tables_with_advanced_bottom_check(pdf_path):
                 # Add page number to the DataFrame
                 df['Page'] = page_num + 1
 
-                # Check each extracted line against the table's last row
-                for line in last_rows_lines:
-                    line_cells = line.split()
-                    if len(line_cells) == len(df.columns) - 1:  # Compare with table columns count (excluding 'Page')
-                        # Check if the line is not already in the table
-                        if not df.iloc[-1, :-1].tolist() == line_cells:
-                            # Append the line to the table
-                            line_cells.append(page_num + 1)  # Add the page number
-                            df = df.append(pd.Series(line_cells, index=df.columns), ignore_index=True)
-
+                # Check if the last row content is missing and append it if necessary
+                if last_row:
+                    # Ensure last_row matches the table's number of columns
+                    if len(last_row) == df.shape[1] - 1:  # Minus 1 for the 'Page' column
+                        # Append the page number to the last row data
+                        last_row.append(page_num + 1)
+                        # Add the missing last row to the DataFrame
+                        df = df.append(pd.Series(last_row, index=df.columns), ignore_index=True)
+                    elif len(last_row) < df.shape[1] - 1:
+                        # If the last row has fewer columns, assume it's part of a multi-line row
+                        # and combine it with the previous row
+                        combined_row = df.iloc[-1, :-1].tolist() + last_row
+                        df.iloc[-1, :-1] = combined_row[:df.shape[1] - 1]  # Update the last row
+                        
                 tables_list.append(df)
 
     # Combine all DataFrames into one
@@ -41,7 +46,7 @@ def extract_tables_with_advanced_bottom_check(pdf_path):
 
 # Usage
 pdf_path = "your_pdf_file.pdf"
-tables_df = extract_tables_with_advanced_bottom_check(pdf_path)
+tables_df = extract_tables_with_bottom_check_v2(pdf_path)
 
 # Display the combined DataFrame
 print(tables_df)
