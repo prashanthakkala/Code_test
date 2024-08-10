@@ -33,15 +33,21 @@ with pdfplumber.open("example.pdf") as pdf:
 
         # Identify the last table's bounding box (bottom y-coordinate)
         if tables:
-            last_table_bbox = max(table[-1][-1]['y1'] for table in page.extract_tables()[0] if table)
+            last_table_bbox = None
+            for table in tables:
+                if table and len(table) > 0:
+                    # Get the Y-coordinate of the bottom of the last cell of the last row of the last table
+                    last_table_bbox = page.extract_words()[-1]['bottom'] if page.extract_words() else 0
+                    break
         else:
             last_table_bbox = 0
 
         # Extract text rows that appear after the last table
         remaining_text = []
-        for word in page.extract_words():
-            if word['bottom'] > last_table_bbox:
-                remaining_text.append(word['text'])
+        if last_table_bbox is not None:
+            for word in page.extract_words():
+                if word['bottom'] > last_table_bbox:
+                    remaining_text.append(word['text'])
 
         # Convert tables to DataFrames and add to all_data
         for table in tables:
