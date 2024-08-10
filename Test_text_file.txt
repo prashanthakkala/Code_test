@@ -22,11 +22,13 @@ def extract_tables_with_bottom_check(pdf_path):
                 df['Page'] = page_num + 1
 
                 # Check if the last row content is missing and append it if necessary
-                if last_row and not any(last_row == df.iloc[-1].tolist()[:len(last_row)]):
-                    # Ensure last_row matches the table's number of columns
-                    if len(last_row) == df.shape[1] - 1:  # Minus 1 for the 'Page' column
-                        last_row.append(page_num + 1)  # Add the page number to the last row
-                        df = df.append(pd.Series(last_row, index=df.columns), ignore_index=True)
+                if last_row:
+                    # Check if the last row is not already in the table
+                    if not df.iloc[-1, :-1].tolist() == last_row:
+                        # Ensure last_row matches the table's number of columns
+                        if len(last_row) == df.shape[1] - 1:  # Minus 1 for the 'Page' column
+                            last_row.append(page_num + 1)  # Add the page number to the last row
+                            df = df.append(pd.Series(last_row, index=df.columns), ignore_index=True)
                 
                 tables_list.append(df)
 
