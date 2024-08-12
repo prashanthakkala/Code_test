@@ -1,63 +1,41 @@
 import pdfplumber
 import pandas as pd
 
-def extract_text_blocks(page):
-    # Extract text blocks and their positions
-    text_blocks = []
-    for element in page.extract_words():
-        text_blocks.append({
-            'text': element['text'],
-            'x0': element['x0'],
-            'x1': element['x1'],
-            'y0': element['y0'],
-            'y1': element['y1']
-        })
-    return text_blocks
+# Path to your PDF file
+pdf_path = 'your_file.pdf'
 
-def group_text_blocks(text_blocks, vertical_tolerance=5, horizontal_tolerance=5):
-    rows = []
-    current_row = []
-    last_y0 = None
+# Initialize an empty DataFrame
+all_tables = pd.DataFrame()
 
-    for block in text_blocks:
-        if last_y0 is not None and abs(block['y0'] - last_y0) > vertical_tolerance:
-            # End of the current row
-            rows.append(current_row)
-            current_row = []
-        current_row.append(block['text'])
-        last_y0 = block['y0']
+# Open the PDF file
+with pdfplumber.open(pdf_path) as pdf:
+    for page_num, page in enumerate(pdf.pages, start=1):
+        # Extract tables from the page
+        tables = page.extract_tables()
+        
+        # Extract text from the bottom of the page
+        # Adjust bbox (bounding box) as needed; here it is set to bottom 10% of the page
+        bottom_bbox = (0, 0.9 * float(page.height), float(page.width), float(page.height))
+        bottom_text = page.within_bbox(bottom_bbox).extract_text().strip()
+        
+        # Split the bottom text into separate strings (assuming strings are separated by newlines)
+        bottom_strings = bottom_text.split('\n')
+        
+        # Iterate over each table
+        for table in tables:
+            # Convert the table to a DataFrame
+            df = pd.DataFrame(table)
+            
+            # Add each string from bottom text as a new row at the end of the DataFrame
+            for string in bottom_strings:
+                bottom_row = pd.DataFrame([[string] + [''] * (len(df.columns) - 1)], columns=df.columns)
+                df = pd.concat([df, bottom_row], ignore_index=True)
+            
+            # Add a column for the page number
+            df['Page Number'] = page_num
+            
+            # Append the DataFrame to the all_tables DataFrame
+            all_tables = pd.concat([all_tables, df], ignore_index=True)
 
-    # Append the last row
-    if current_row:
-        rows.append(current_row)
-
-    return rows
-
-def process_table_data(rows):
-    # Convert rows to DataFrame
-    df = pd.DataFrame(rows)
-    
-    # Optionally, set column names if known
-    # df.columns = ['Column1', 'Column2', 'Column3']
-    
-    return df
-
-def extract_and_process_tables(pdf_path):
-    with pdfplumber.open(pdf_path) as pdf:
-        all_tables = []
-        for page in pdf.pages:
-            text_blocks = extract_text_blocks(page)
-            rows = group_text_blocks(text_blocks)
-            df = process_table_data(rows)
-            all_tables.append(df)
-    
-    return all_tables
-
-# Example usage
-pdf_path = "your_pdf_file.pdf"
-tables = extract_and_process_tables(pdf_path)
-
-# Display the extracted tables
-for idx, table in enumerate(tables):
-    print(f"Table {idx + 1}:")
-    print(table)
+# Display the combined DataFrame
+print(all_tables)
