@@ -1,6 +1,6 @@
 import pdfplumber
 
-def extract_text_between_tables(pdf_path):
+def extract_text_after_last_table(pdf_path):
     # Open the PDF file with pdfplumber
     with pdfplumber.open(pdf_path) as pdf:
         # Iterate through all pages in the PDF
@@ -15,7 +15,7 @@ def extract_text_between_tables(pdf_path):
                 if tables:
                     # Initialize end position of the last table
                     last_table_end_position = 0
-                    
+
                     # Find the end position of the last table
                     for table in tables:
                         # Flatten table cells and join them into a single string
@@ -26,7 +26,7 @@ def extract_text_between_tables(pdf_path):
                     
                     # Extract text after the end of the last table
                     text_after_table = page_text[last_table_end_position:].strip()
-                    
+
                     if text_after_table:
                         print(f"Page {i + 1} of {len(pdf.pages)} - Text after last table:")
                         print(text_after_table)
@@ -39,4 +39,4 @@ def extract_text_between_tables(pdf_path):
 
 # Path to your PDF file
 pdf_path = "your_file.pdf"
-extract_text_between_tables(pdf_path)
+extract_text_after_last_table(pdf_path)
