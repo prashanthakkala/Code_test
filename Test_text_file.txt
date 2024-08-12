@@ -1,53 +1,35 @@
 import pdfplumber
 
-def process_pdf(pdf_path):
-    results = []
+# Path to your PDF file
+pdf_path = "your_file.pdf"
 
-    with pdfplumber.open(pdf_path) as pdf:
-        for page_number, page in enumerate(pdf.pages, start=1):
-            lines = page.lines
-            tables = page.extract_tables()
-            page_text = page.extract_text()
+# Open the PDF file with pdfplumber
+with pdfplumber.open(pdf_path) as pdf:
+    # Iterate through all pages in the PDF
+    for i, page in enumerate(pdf.pages):
+        # Extract the text from the page
+        page_text = page.extract_text()
+        
+        # Extract tables from the page
+        tables = page.extract_tables()
 
+        # Check if there is text on the page
+        if page_text:
+            # If there are tables, find the text between the tables
             if tables:
-                for table_number, table in enumerate(tables, start=1):
-                    table_data = {
-                        "page_number": page_number,
-                        "table_number": table_number,
-                        "table_content": table,
-                        "missing_horizontal_line": False,
-                        "text_after_table": ""
-                    }
+                table_text = ""
+                for table in tables:
+                    table_start_index = page_text.find(str(table[0][0]))
+                    table_end_index = page_text.find(str(table[-1][-1])) + len(str(table[-1][-1]))
+                    table_text += page_text[:table_start_index] + page_text[table_end_index:]
 
-                    # Determine Y-coordinate of the last row in the table
-                    last_row_y = max([float(cell.get("y1", 0)) for row in table for cell in row if isinstance(cell, dict)], default=None)
-                    
-                    # Check if the end horizontal line is missing
-                    horizontal_lines = [line for line in lines if abs(line['top'] - last_row_y) < 2]  # Allowing small margin for floating point precision
-
-                    if not horizontal_lines:
-                        table_data["missing_horizontal_line"] = True
-
-                    # Extract the text after the table
-                    if last_row_y:
-                        text_after_table = ""
-                        for char in page.chars:
-                            if char['top'] > last_row_y:
-                                text_after_table += char['text']
-
-                        table_data["text_after_table"] = text_after_table.strip()
-
-                    # Add the result to the list
-                    results.append(table_data)
-
-    return results
-
-# Example usage
-pdf_path = 'your_pdf.pdf'
-results = process_pdf(pdf_path)
-
-for result in results:
-    print(f"Page {result['page_number']}, Table {result['table_number']}:")
-    if result['missing_horizontal_line']:
-        print("  - Missing horizontal line after the table")
-    print(f"  - Text after table: '{result['text_after_table']}'")
+                # If text is found between tables, print it
+                if table_text.strip():
+                    print(f"Page {i+1} of {len(pdf.pages)} - Text between tables:")
+                    print(table_text)
+                else:
+                    print(f"Page {i+1} of {len(pdf.pages)} - no data")
+            else:
+                print(f"Page {i+1} of {len(pdf.pages)} - no data")
+        else:
+            print(f"Page {i+1} of {len(pdf.pages)} - no data")
