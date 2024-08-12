@@ -1,11 +1,9 @@
 import pdfplumber
 
-def process_pdf(pdf_path):
+def process_pdf(pdf_path, expected_texts):
     with pdfplumber.open(pdf_path) as pdf:
         for page_number, page in enumerate(pdf.pages, start=1):
-            # Extract lines from the page
             lines = page.lines
-            # Extract tables from the page
             tables = page.extract_tables()
 
             if tables:
@@ -14,15 +12,27 @@ def process_pdf(pdf_path):
                     for row in table:
                         print(row)
                     
-                    # Check if the end horizontal line is missing
-                    last_row_y = table[-1][2] if table[-1][2] else None
-                    horizontal_lines = [line for line in lines if line['top'] == last_row_y]
+                    # Get the Y-coordinate of the last row of the table
+                    last_row_y = max([float(cell.get("y1", 0)) for row in table for cell in row if isinstance(cell, dict)], default=None)
 
+                    # Check if the end horizontal line is missing
+                    horizontal_lines = [line for line in lines if line['top'] == last_row_y]
                     if not horizontal_lines:
                         print(f"End horizontal line is missing after table {table_number} on page {page_number}")
+
+                    # Check if the expected text is present after the table
+                    text_found = False
+                    for text in expected_texts:
+                        if any(text in word for word in page.extract_text().split()):
+                            text_found = True
+                            break
+
+                    if not text_found:
+                        print(f"Expected text is missing after table {table_number} on page {page_number}")
 
             else:
                 print(f"No tables found on page {page_number}")
 
 # Replace 'your_pdf.pdf' with your actual PDF file path
-process_pdf('your_pdf.pdf')
+# Replace ['Expected Text 1', 'Expected Text 2'] with the list of texts you expect to find after each table
+process_pdf('your_pdf.pdf', ['Expected Text 1', 'Expected Text 2'])
