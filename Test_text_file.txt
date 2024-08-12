@@ -18,8 +18,8 @@ def extract_text_after_last_table(pdf_path):
 
                     # Find the end position of the last table
                     for table in tables:
-                        # Flatten table cells and join them into a single string
-                        table_text = '\n'.join(['\t'.join(row) for row in table])
+                        # Flatten table cells and join them into a single string, handling None values
+                        table_text = '\n'.join(['\t'.join(str(cell) if cell is not None else '' for cell in row) for row in table])
                         table_end_index = page_text.rfind(table_text)
                         if table_end_index != -1:
                             last_table_end_position = table_end_index + len(table_text)
