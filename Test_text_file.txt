@@ -1,38 +1,53 @@
 import pdfplumber
 
-def process_pdf(pdf_path, expected_texts):
+def process_pdf(pdf_path):
+    results = []
+
     with pdfplumber.open(pdf_path) as pdf:
         for page_number, page in enumerate(pdf.pages, start=1):
             lines = page.lines
             tables = page.extract_tables()
+            page_text = page.extract_text()
 
             if tables:
                 for table_number, table in enumerate(tables, start=1):
-                    print(f"Page {page_number}, Table {table_number}:")
-                    for row in table:
-                        print(row)
-                    
-                    # Get the Y-coordinate of the last row of the table
+                    table_data = {
+                        "page_number": page_number,
+                        "table_number": table_number,
+                        "table_content": table,
+                        "missing_horizontal_line": False,
+                        "text_after_table": ""
+                    }
+
+                    # Determine Y-coordinate of the last row in the table
                     last_row_y = max([float(cell.get("y1", 0)) for row in table for cell in row if isinstance(cell, dict)], default=None)
-
+                    
                     # Check if the end horizontal line is missing
-                    horizontal_lines = [line for line in lines if line['top'] == last_row_y]
+                    horizontal_lines = [line for line in lines if abs(line['top'] - last_row_y) < 2]  # Allowing small margin for floating point precision
+
                     if not horizontal_lines:
-                        print(f"End horizontal line is missing after table {table_number} on page {page_number}")
+                        table_data["missing_horizontal_line"] = True
 
-                    # Check if the expected text is present after the table
-                    text_found = False
-                    for text in expected_texts:
-                        if any(text in word for word in page.extract_text().split()):
-                            text_found = True
-                            break
+                    # Extract the text after the table
+                    if last_row_y:
+                        text_after_table = ""
+                        for char in page.chars:
+                            if char['top'] > last_row_y:
+                                text_after_table += char['text']
 
-                    if not text_found:
-                        print(f"Expected text is missing after table {table_number} on page {page_number}")
+                        table_data["text_after_table"] = text_after_table.strip()
 
-            else:
-                print(f"No tables found on page {page_number}")
+                    # Add the result to the list
+                    results.append(table_data)
 
-# Replace 'your_pdf.pdf' with your actual PDF file path
-# Replace ['Expected Text 1', 'Expected Text 2'] with the list of texts you expect to find after each table
-process_pdf('your_pdf.pdf', ['Expected Text 1', 'Expected Text 2'])
+    return results
+
+# Example usage
+pdf_path = 'your_pdf.pdf'
+results = process_pdf(pdf_path)
+
+for result in results:
+    print(f"Page {result['page_number']}, Table {result['table_number']}:")
+    if result['missing_horizontal_line']:
+        print("  - Missing horizontal line after the table")
+    print(f"  - Text after table: '{result['text_after_table']}'")
