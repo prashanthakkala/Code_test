@@ -1,48 +1,28 @@
 import pdfplumber
-import pandas as pd
 
-# Path to your PDF file
-pdf_path = 'your_file.pdf'
+def process_pdf(pdf_path):
+    with pdfplumber.open(pdf_path) as pdf:
+        for page_number, page in enumerate(pdf.pages, start=1):
+            # Extract lines from the page
+            lines = page.lines
+            # Extract tables from the page
+            tables = page.extract_tables()
 
-# Initialize an empty DataFrame
-all_tables = pd.DataFrame()
+            if tables:
+                for table_number, table in enumerate(tables, start=1):
+                    print(f"Page {page_number}, Table {table_number}:")
+                    for row in table:
+                        print(row)
+                    
+                    # Check if the end horizontal line is missing
+                    last_row_y = table[-1][2] if table[-1][2] else None
+                    horizontal_lines = [line for line in lines if line['top'] == last_row_y]
 
-# Open the PDF file
-with pdfplumber.open(pdf_path) as pdf:
-    for page_num, page in enumerate(pdf.pages, start=1):
-        # Extract tables from the page
-        tables = page.extract_tables()
-        
-        # Initialize a variable to track the bottom of the last table
-        last_table_bottom = 0
-        
-        # Iterate over each table
-        for table in tables:
-            # Convert the table to a DataFrame
-            df = pd.DataFrame(table)
-            
-            # Add a column for the page number
-            df['Page Number'] = page_num
-            
-            # Append the DataFrame to the all_tables DataFrame
-            all_tables = pd.concat([all_tables, df], ignore_index=True)
-            
-            # Update the bottom position of the last table
-            last_table_bottom = page.height
-        
-        # If there is any text after the last table, extract it
-        if last_table_bottom < page.height:
-            # Define a bounding box for the area after the last table
-            bottom_bbox = (0, last_table_bottom, float(page.width), float(page.height))
-            bottom_text = page.within_bbox(bottom_bbox).extract_text().strip()
-            
-            # Split the bottom text into separate strings (assuming strings are separated by newlines)
-            bottom_strings = bottom_text.split('\n')
-            
-            # Add each string from bottom text as a new row in the DataFrame
-            for string in bottom_strings:
-                bottom_row = pd.DataFrame([[string] + [''] * (all_tables.shape[1] - 2) + [page_num]], columns=all_tables.columns)
-                all_tables = pd.concat([all_tables, bottom_row], ignore_index=True)
+                    if not horizontal_lines:
+                        print(f"End horizontal line is missing after table {table_number} on page {page_number}")
 
-# Display the combined DataFrame
-print(all_tables)
+            else:
+                print(f"No tables found on page {page_number}")
+
+# Replace 'your_pdf.pdf' with your actual PDF file path
+process_pdf('your_pdf.pdf')
