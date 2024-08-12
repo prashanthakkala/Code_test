@@ -1,35 +1,42 @@
 import pdfplumber
 
+def extract_text_between_tables(pdf_path):
+    # Open the PDF file with pdfplumber
+    with pdfplumber.open(pdf_path) as pdf:
+        # Iterate through all pages in the PDF
+        for i, page in enumerate(pdf.pages):
+            # Extract text from the page
+            page_text = page.extract_text()
+            
+            if page_text:
+                # Extract tables from the page
+                tables = page.extract_tables()
+
+                if tables:
+                    # Initialize end position of the last table
+                    last_table_end_position = 0
+                    
+                    # Find the end position of the last table
+                    for table in tables:
+                        # Flatten table cells and join them into a single string
+                        table_text = '\n'.join(['\t'.join(row) for row in table])
+                        table_end_index = page_text.rfind(table_text)
+                        if table_end_index != -1:
+                            last_table_end_position = table_end_index + len(table_text)
+                    
+                    # Extract text after the end of the last table
+                    text_after_table = page_text[last_table_end_position:].strip()
+                    
+                    if text_after_table:
+                        print(f"Page {i + 1} of {len(pdf.pages)} - Text after last table:")
+                        print(text_after_table)
+                    else:
+                        print(f"Page {i + 1} of {len(pdf.pages)} - no data after last table")
+                else:
+                    print(f"Page {i + 1} of {len(pdf.pages)} - no tables found on this page")
+            else:
+                print(f"Page {i + 1} of {len(pdf.pages)} - no data")
+
 # Path to your PDF file
 pdf_path = "your_file.pdf"
-
-# Open the PDF file with pdfplumber
-with pdfplumber.open(pdf_path) as pdf:
-    # Iterate through all pages in the PDF
-    for i, page in enumerate(pdf.pages):
-        # Extract the text from the page
-        page_text = page.extract_text()
-        
-        # Extract tables from the page
-        tables = page.extract_tables()
-
-        # Check if there is text on the page
-        if page_text:
-            # If there are tables, find the text between the tables
-            if tables:
-                table_text = ""
-                for table in tables:
-                    table_start_index = page_text.find(str(table[0][0]))
-                    table_end_index = page_text.find(str(table[-1][-1])) + len(str(table[-1][-1]))
-                    table_text += page_text[:table_start_index] + page_text[table_end_index:]
-
-                # If text is found between tables, print it
-                if table_text.strip():
-                    print(f"Page {i+1} of {len(pdf.pages)} - Text between tables:")
-                    print(table_text)
-                else:
-                    print(f"Page {i+1} of {len(pdf.pages)} - no data")
-            else:
-                print(f"Page {i+1} of {len(pdf.pages)} - no data")
-        else:
-            print(f"Page {i+1} of {len(pdf.pages)} - no data")
+extract_text_between_tables(pdf_path)
