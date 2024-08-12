@@ -13,29 +13,36 @@ with pdfplumber.open(pdf_path) as pdf:
         # Extract tables from the page
         tables = page.extract_tables()
         
-        # Extract text from the bottom of the page
-        # Adjust bbox (bounding box) as needed; here it is set to bottom 10% of the page
-        bottom_bbox = (0, 0.9 * float(page.height), float(page.width), float(page.height))
-        bottom_text = page.within_bbox(bottom_bbox).extract_text().strip()
-        
-        # Split the bottom text into separate strings (assuming strings are separated by newlines)
-        bottom_strings = bottom_text.split('\n')
+        # Initialize a variable to track the bottom of the last table
+        last_table_bottom = 0
         
         # Iterate over each table
         for table in tables:
             # Convert the table to a DataFrame
             df = pd.DataFrame(table)
             
-            # Add each string from bottom text as a new row at the end of the DataFrame
-            for string in bottom_strings:
-                bottom_row = pd.DataFrame([[string] + [''] * (len(df.columns) - 1)], columns=df.columns)
-                df = pd.concat([df, bottom_row], ignore_index=True)
-            
             # Add a column for the page number
             df['Page Number'] = page_num
             
             # Append the DataFrame to the all_tables DataFrame
             all_tables = pd.concat([all_tables, df], ignore_index=True)
+            
+            # Update the bottom position of the last table
+            last_table_bottom = page.height
+        
+        # If there is any text after the last table, extract it
+        if last_table_bottom < page.height:
+            # Define a bounding box for the area after the last table
+            bottom_bbox = (0, last_table_bottom, float(page.width), float(page.height))
+            bottom_text = page.within_bbox(bottom_bbox).extract_text().strip()
+            
+            # Split the bottom text into separate strings (assuming strings are separated by newlines)
+            bottom_strings = bottom_text.split('\n')
+            
+            # Add each string from bottom text as a new row in the DataFrame
+            for string in bottom_strings:
+                bottom_row = pd.DataFrame([[string] + [''] * (all_tables.shape[1] - 2) + [page_num]], columns=all_tables.columns)
+                all_tables = pd.concat([all_tables, bottom_row], ignore_index=True)
 
 # Display the combined DataFrame
 print(all_tables)
