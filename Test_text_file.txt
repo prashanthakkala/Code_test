@@ -1,18 +1,11 @@
 import pdfplumber
 
-def print_text_lines(pdf_path):
-    with pdfplumber.open(pdf_path) as pdf:
-        for i, page in enumerate(pdf.pages):
-            # Extract text lines from the page
-            lines = page.extract_text_lines()
-            
-            print(f"Page {i + 1} of {len(pdf.pages)}:")
-            if lines:
-                for line in lines:
-                    print(line)
-            else:
-                print("No text lines found on this page")
-
-# Path to your PDF file
-pdf_path = "your_file.pdf"
-print_text_lines(pdf_path)
+with pdfplumber.open("your_file.pdf") as pdf:
+    for page in pdf.pages:
+        lines = page.lines
+        if lines:
+            print(f"Page {page.page_number} has {len(lines)} lines.")
+            for line in lines:
+                print(line)
+        else:
+            print(f"Page {page.page_number} has no lines.")
