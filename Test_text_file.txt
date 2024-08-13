@@ -4,21 +4,21 @@ import pdfplumber
 with pdfplumber.open("your-file.pdf") as pdf:
     page = pdf.pages[0]
     
-    # Define bounding boxes for different tables if necessary
-    table_areas = [
-        (50, 50, 550, 300),  # Example coordinates for the first table
-        (50, 350, 550, 750)  # Example coordinates for the second table
-    ]
+    # Define the bounding box for the table area
+    table_area = (50, 50, 550, 750)  # Example coordinates for the table
     
-    # Extract tables from each defined area
-    for bbox in table_areas:
-        cropped_page = page.within_bbox(bbox)
-        tables = cropped_page.find_tables()
-        
-        if tables:
-            # Get the last table from this cropped area
-            last_table = tables[-1]
-            
-            # Extract and print the last table's content
-            for row in last_table.extract():
-                print(row)
+    # Crop the page to the table area
+    cropped_page = page.within_bbox(table_area)
+    
+    # Extract the table from the cropped area
+    tables = cropped_page.find_tables(table_settings={
+        "vertical_strategy": "lines",   # Use vertical lines for table structure
+        "horizontal_strategy": "lines-strict" # Allow horizontal lines if present
+    })
+    
+    if tables:
+        last_table = tables[-1]  # Get the last table
+        for row in last_table.extract():
+            print(row)
+    else:
+        print("No tables found in the specified area.")
