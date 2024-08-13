@@ -4,19 +4,21 @@ import pdfplumber
 with pdfplumber.open("your-file.pdf") as pdf:
     page = pdf.pages[0]
     
-    # Manually define the table area (bounding box)
-    # The coordinates (x0, top, x1, bottom) can be adjusted as per your table's location
-    table_area = (50, 50, 550, 750)  # Example coordinates
+    # Define bounding boxes for different tables if necessary
+    table_areas = [
+        (50, 50, 550, 300),  # Example coordinates for the first table
+        (50, 350, 550, 750)  # Example coordinates for the second table
+    ]
     
-    # Crop the page to the table area
-    cropped_page = page.within_bbox(table_area)
-    
-    # Extract the table from the cropped area
-    table = cropped_page.extract_table()
-    
-    for row in table:
-        print(row)
-
-    # Visualize the cropped area with debug mode
-    im = page.within_bbox(table_area).to_image(resolution=300)
-    im.debug_tablefinder()
+    # Extract tables from each defined area
+    for bbox in table_areas:
+        cropped_page = page.within_bbox(bbox)
+        tables = cropped_page.find_tables()
+        
+        if tables:
+            # Get the last table from this cropped area
+            last_table = tables[-1]
+            
+            # Extract and print the last table's content
+            for row in last_table.extract():
+                print(row)
