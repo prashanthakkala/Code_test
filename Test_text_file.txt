@@ -1,27 +1,34 @@
 import pdfplumber
 
-def get_text_after_bbox(page, bbox):
+def extract_text_after_table(page, table_bbox):
     """
-    Extracts text that comes after the bottom of a given bounding box until the end of the page.
+    Extracts text from the end of the table to the end of the page.
+    `table_bbox` is the bounding box of the table (x0, y0, x1, y1).
     """
     bottom_text = ""
+    is_after_table = False
+
     for word in page.extract_words():
         word_bbox = (word['x0'], word['top'], word['x1'], word['bottom'])
+
+        # Check if the word is below the bottom of the given table's bounding box
+        if word_bbox[1] > table_bbox[3]:  # word['top'] > table_bbox[3]
+            is_after_table = True
         
-        # Check if the word is below the bottom of the given bounding box
-        if word_bbox[1] > bbox[3]:  # bbox[3] is the bottom edge of the bounding box
+        # Once we start finding words below the table, we add them to the bottom_text
+        if is_after_table:
             bottom_text += word['text'] + " "
 
     return bottom_text.strip()
 
 # Define the bounding box for your table
-table_bbox = (366, 329, 469, 357)
+table_bbox = (366, 329, 469, 357)  # Example table bounding box
 
 # Open the PDF file
 with pdfplumber.open("your-file.pdf") as pdf:
     for page in pdf.pages:
         # Extract the text after the given table's bounding box
-        bottom_text = get_text_after_bbox(page, table_bbox)
+        bottom_text = extract_text_after_table(page, table_bbox)
 
         # Print the bottom text after the table's bounding box
         print(f"Text after the table on Page {page.page_number}:\n", bottom_text)
