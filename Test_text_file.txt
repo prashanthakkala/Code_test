@@ -1,11 +1,28 @@
 import pdfplumber
 
-with pdfplumber.open("your_file.pdf") as pdf:
+# Open the PDF file
+with pdfplumber.open("your-file.pdf") as pdf:
     for page in pdf.pages:
-        lines = page.lines
-        if lines:
-            print(f"Page {page.page_number} has {len(lines)} lines.")
-            for line in lines:
-                print(line)
-        else:
-            print(f"Page {page.page_number} has no lines.")
+        # Get the page's full text
+        page_text = page.extract_text()
+
+        # Get the bounding boxes of tables
+        table_regions = [table.bbox for table in page.find_tables()]
+
+        # Extract the non-table text
+        non_table_text = ""
+        for char in page.chars:
+            char_bbox = (char['x0'], char['top'], char['x1'], char['bottom'])
+
+            # Check if the character is within any table region
+            in_table = any(
+                char_bbox[0] >= bbox[0] and char_bbox[2] <= bbox[2] and 
+                char_bbox[1] >= bbox[1] and char_bbox[3] <= bbox[3]
+                for bbox in table_regions
+            )
+
+            # If the character is not in a table, add it to the non-table text
+            if not in_table:
+                non_table_text += char['text']
+
+        print(non_table_text)
