@@ -1,34 +1,22 @@
 import pdfplumber
 
-def extract_text_after_table(page, table_bbox):
-    """
-    Extracts text from the end of the table to the end of the page.
-    `table_bbox` is the bounding box of the table (x0, y0, x1, y1).
-    """
-    bottom_text = ""
-    is_after_table = False
-
-    for word in page.extract_words():
-        word_bbox = (word['x0'], word['top'], word['x1'], word['bottom'])
-
-        # Check if the word is below the bottom of the given table's bounding box
-        if word_bbox[1] > table_bbox[3]:  # word['top'] > table_bbox[3]
-            is_after_table = True
-        
-        # Once we start finding words below the table, we add them to the bottom_text
-        if is_after_table:
-            bottom_text += word['text'] + " "
-
-    return bottom_text.strip()
-
-# Define the bounding box for your table
-table_bbox = (366, 329, 469, 357)  # Example table bounding box
-
 # Open the PDF file
 with pdfplumber.open("your-file.pdf") as pdf:
-    for page in pdf.pages:
-        # Extract the text after the given table's bounding box
-        bottom_text = extract_text_after_table(page, table_bbox)
+    page = pdf.pages[0]
+    
+    # Manually define the table area (bounding box)
+    # The coordinates (x0, top, x1, bottom) can be adjusted as per your table's location
+    table_area = (50, 50, 550, 750)  # Example coordinates
+    
+    # Crop the page to the table area
+    cropped_page = page.within_bbox(table_area)
+    
+    # Extract the table from the cropped area
+    table = cropped_page.extract_table()
+    
+    for row in table:
+        print(row)
 
-        # Print the bottom text after the table's bounding box
-        print(f"Text after the table on Page {page.page_number}:\n", bottom_text)
+    # Visualize the cropped area with debug mode
+    im = page.within_bbox(table_area).to_image(resolution=300)
+    im.debug_tablefinder()
