@@ -29,4 +29,17 @@ with pdfplumber.open("your-file.pdf") as pdf:
 
         # Check if there are any tables on the page
         if tables:
-            for idx, table in​⬤
+            for idx, table in enumerate(tables):
+                # Get the bounding box of the current table
+                table_bbox = table.bbox
+
+                # Extract text around the table
+                text_above, text_below = extract_text_around_table(page, table_bbox)
+
+                # Print the text above and below the table
+                print(f"Page {page.page_number}, Table {idx + 1}:")
+                print("Text Above the Table:\n", text_above)
+                print("Text Below the Table:\n", text_below)
+                print("-" * 40)
+        else:
+            print(f"No tables found on Page {page.page_number}.")
