@@ -1,45 +1,27 @@
 import pdfplumber
 
-def extract_text_around_table(page, table_bbox, margin=10):
+def get_text_after_bbox(page, bbox):
     """
-    Extracts text around a given table region.
-    `margin` is an optional parameter to include some space around the table.
+    Extracts text that comes after the bottom of a given bounding box until the end of the page.
     """
-    text_above = ""
-    text_below = ""
-    
+    bottom_text = ""
     for word in page.extract_words():
         word_bbox = (word['x0'], word['top'], word['x1'], word['bottom'])
         
-        # Check if the word is above the table
-        if word_bbox[3] < table_bbox[1] - margin:
-            text_above += word['text'] + " "
-        
-        # Check if the word is below the table
-        elif word_bbox[1] > table_bbox[3] + margin:
-            text_below += word['text'] + " "
+        # Check if the word is below the bottom of the given bounding box
+        if word_bbox[1] > bbox[3]:  # bbox[3] is the bottom edge of the bounding box
+            bottom_text += word['text'] + " "
 
-    return text_above.strip(), text_below.strip()
+    return bottom_text.strip()
+
+# Define the bounding box for your table
+table_bbox = (366, 329, 469, 357)
 
 # Open the PDF file
 with pdfplumber.open("your-file.pdf") as pdf:
     for page in pdf.pages:
-        # Find all tables on the page
-        tables = page.find_tables()
+        # Extract the text after the given table's bounding box
+        bottom_text = get_text_after_bbox(page, table_bbox)
 
-        # Check if there are any tables on the page
-        if tables:
-            for idx, table in enumerate(tables):
-                # Get the bounding box of the current table
-                table_bbox = table.bbox
-
-                # Extract text around the table
-                text_above, text_below = extract_text_around_table(page, table_bbox)
-
-                # Print the text above and below the table
-                print(f"Page {page.page_number}, Table {idx + 1}:")
-                print("Text Above the Table:\n", text_above)
-                print("Text Below the Table:\n", text_below)
-                print("-" * 40)
-        else:
-            print(f"No tables found on Page {page.page_number}.")
+        # Print the bottom text after the table's bounding box
+        print(f"Text after the table on Page {page.page_number}:\n", bottom_text)
