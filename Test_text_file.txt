@@ -1,50 +1,30 @@
 import pdfplumber
 
-def get_bottom_text(text, last_table_bbox):
+def get_bottom_text(text, last_table_bbox, page):
     """Extract text that comes after the last table on the page."""
     bottom_text = ""
-    for line in text.splitlines():
-        # Extract the y-coordinate of the line
-        if len(line.strip()) > 0:
-            y_coordinate = page.extract_words()[0]['top']
-            if y_coordinate > last_table_bbox[3]:  # Compare with the bottom of the last table
-                bottom_text += line + "\n"
+    for word in page.extract_words():
+        # Extract the y-coordinate of the word
+        if word['top'] > last_table_bbox[3]:  # Compare with the bottom of the last table
+            bottom_text += word['text'] + " "
     return bottom_text.strip()
 
 # Open the PDF file
 with pdfplumber.open("your-file.pdf") as pdf:
     for page in pdf.pages:
-        # Get the page's full text
-        page_text = page.extract_text()
-
-        # Find tables and their bounding boxes
+        # Find all tables on the page
         tables = page.find_tables()
-        table_regions = [table.bbox for table in tables]
 
-        # Initialize variables
-        non_table_text = ""
-        last_table_bbox = None
+        # Check if there are any tables on the page
+        if tables:
+            # Get the bounding box of the last table
+            last_table_bbox = tables[-1].bbox
 
-        for char in page.chars:
-            char_bbox = (char['x0'], char['top'], char['x1'], char['bottom'])
+            # Extract the text after the last table
+            bottom_text = get_bottom_text(page.extract_text(), last_table_bbox, page)
 
-            # Check if the character is within any table region
-            in_table = any(
-                char_bbox[0] >= bbox[0] and char_bbox[2] <= bbox[2] and 
-                char_bbox[1] >= bbox[1] and char_bbox[3] <= bbox[3]
-                for bbox in table_regions
-            )
-
-            # If the character is not in a table, add it to the non-table text
-            if not in_table:
-                non_table_text += char['text']
-            else:
-                # Keep track of the last table's bounding box
-                last_table_bbox = char_bbox
-
-        # If there's a table, find the bottom text
-        if last_table_bbox:
-            bottom_text = get_bottom_text(page_text, last_table_bbox)
-            print("Bottom Text Below Table:\n", bottom_text)
+            # Print the bottom text after the last table
+            print(f"Bottom Text Below Last Table on Page {page.page_number}:\n", bottom_text)
         else:
-            print("Non-table Text:\n", non_table_text)
+            # If no tables, you can decide what to do (e.g., extract the whole page text)
+            print(f"No tables found on Page {page.page_number}.")
