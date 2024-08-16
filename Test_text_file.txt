@@ -1,24 +1,16 @@
-import pdfplumber
+import pandas as pd
+import numpy as np
 
-# Open the PDF file
-with pdfplumber.open("your-file.pdf") as pdf:
-    page = pdf.pages[0]
-    
-    # Define the bounding box for the table area
-    table_area = (50, 50, 550, 750)  # Example coordinates for the table
-    
-    # Crop the page to the table area
-    cropped_page = page.within_bbox(table_area)
-    
-    # Extract the table from the cropped area
-    tables = cropped_page.find_tables(table_settings={
-        "vertical_strategy": "lines",   # Use vertical lines for table structure
-        "horizontal_strategy": "lines-strict" # Allow horizontal lines if present
-    })
-    
-    if tables:
-        last_table = tables[-1]  # Get the last table
-        for row in last_table.extract():
-            print(row)
-    else:
-        print("No tables found in the specified area.")
+# Example DataFrame
+data = {'Column1': [1, 2, 3],
+        'Column2': [np.nan, 5, np.nan],
+        'Column3': [4, np.nan, np.nan]}
+
+df = pd.DataFrame(data)
+
+# Create a new column based on conditions
+df['NewColumn'] = np.where(df['Column2'].isna() & df['Column3'].isna(), 'Both NaN',
+                           np.where(df['Column2'].isna(), 'Column2 NaN',
+                                    np.where(df['Column3'].isna(), 'Column3 NaN', 'None NaN')))
+
+print(df)
