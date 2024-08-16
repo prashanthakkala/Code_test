@@ -8,9 +8,9 @@ data = {'Column1': [1, 2, 3],
 
 df = pd.DataFrame(data)
 
-# Create a new column based on conditions
-df['NewColumn'] = np.where(df['Column2'].isna() & df['Column3'].isna(), 'Both NaN',
-                           np.where(df['Column2'].isna(), 'Column2 NaN',
-                                    np.where(df['Column3'].isna(), 'Column3 NaN', 'None NaN')))
+# Create a new column based on the condition
+df['NewColumn'] = df.apply(lambda row: row['Column1'] 
+                           if pd.isna(row['Column2']) or pd.isna(row['Column3']) 
+                           else np.nan, axis=1)
 
 print(df)
