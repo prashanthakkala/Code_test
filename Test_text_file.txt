@@ -1,16 +1,13 @@
 import pandas as pd
-import numpy as np
 
 # Example DataFrame
-data = {'Column1': [1, 2, 3],
-        'Column2': [np.nan, 5, np.nan],
-        'Column3': [4, np.nan, np.nan]}
+df = pd.DataFrame({
+    'A': [1, 2, None],
+    'B': [None, None, None],
+    'C': [None, 4, None]
+})
 
-df = pd.DataFrame(data)
+# Drop rows where all values are NaN
+df_cleaned = df.dropna(how='all')
 
-# Create a new column based on the condition
-df['NewColumn'] = df.apply(lambda row: row['Column1'] 
-                           if pd.isna(row['Column2']) or pd.isna(row['Column3']) 
-                           else np.nan, axis=1)
-
-print(df)
+print(df_cleaned)
