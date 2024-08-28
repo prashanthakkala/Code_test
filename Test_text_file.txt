@@ -1,13 +1,26 @@
-import pandas as pd
+import pdfplumber
 
-# Example DataFrame
-df = pd.DataFrame({
-    'A': [1, 2, None],
-    'B': [None, None, None],
-    'C': [None, 4, None]
-})
+def extract_text_with_lines(pdf_path):
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            # Extract horizontal lines from the page
+            lines = [obj for obj in page.objects['lines'] if obj['width'] > obj['height']]
+            
+            # Sort lines based on the y-position
+            lines.sort(key=lambda x: x['y0'], reverse=True)
+            
+            # Extract text between the lines
+            for i in range(len(lines) - 1):
+                top = lines[i]['y0']
+                bottom = lines[i + 1]['y0']
+                
+                # Define a cropping box to extract text within the region
+                cropped_page = page.within_bbox((0, bottom, page.width, top))
+                
+                # Extract text from the cropped region
+                text = cropped_page.extract_text()
+                
+                print(f"Text between line {i} and line {i + 1}:\n{text}\n{'-'*40}")
 
-# Drop rows where all values are NaN
-df_cleaned = df.dropna(how='all')
-
-print(df_cleaned)
+# Provide the path to your PDF file
+extract_text_with_lines("your_file.pdf")
