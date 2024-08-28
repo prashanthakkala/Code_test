@@ -4,7 +4,7 @@ def extract_text_with_lines(pdf_path):
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
             # Extract horizontal lines from the page
-            lines = [obj for obj in page.objects['lines'] if obj['width'] > obj['height']]
+            lines = [line for line in page.lines if line['width'] > line['height']]
             
             # Sort lines based on the y-position
             lines.sort(key=lambda x: x['y0'], reverse=True)
