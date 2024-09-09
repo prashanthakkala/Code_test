@@ -1,27 +1,27 @@
 import fitz  # PyMuPDF
 
-def remove_yellow_background(pdf_path, output_path):
+def remove_yellow_annotations(pdf_path, output_path):
     pdf = fitz.open(pdf_path)
 
     # Iterate through each page
     for page_num in range(pdf.page_count):
         page = pdf.load_page(page_num)
-        text_instances = page.get_text("dict")["blocks"]
-
-        # Collect all text items with yellow background
-        yellow_items = []
-        for block in text_instances:
-            if block['type'] == 0:  # Text block
-                for line in block["lines"]:
-                    for span in line["spans"]:
-                        if 'bg' in span and span['bg'] == [1.0, 1.0, 0.0]:  # RGB for yellow
-                            yellow_items.append(span)
-
-        # Remove yellow backgrounds
-        for span in yellow_items:
-            bbox = fitz.Rect(span['bbox'])
-            page.add_redaction_annot(bbox, fill=(1, 1, 1))  # Redact with white background
-            page.apply_redactions()
+        
+        # Iterate through annotations on the page
+        annotations = page.annots()
+        if annotations:
+            for annot in annotations:
+                # Check if annotation is a highlight
+                if annot.type[0] == 8:  # Highlight annotation
+                    fill_color = annot.colors.get("fill")
+                    stroke_color = annot.colors.get("stroke")
+                    
+                    # Define yellow color
+                    yellow = (1.0, 1.0, 0.0)  # RGB for yellow
+                    
+                    # Check if fill or stroke color is yellow
+                    if fill_color == yellow or stroke_color == yellow:
+                        page.delete_annot(annot)  # Remove annotation
 
     # Save the modified PDF
     pdf.save(output_path)
@@ -29,5 +29,5 @@ def remove_yellow_background(pdf_path, output_path):
 
 # Example usage
 pdf_path = "your_file.pdf"
-output_path = "output_no_yellow_background.pdf"
-remove_yellow_background(pdf_path, output_path)
+output_path = "output_no_yellow_annotations.pdf"
+remove_yellow_annotations(pdf_path, output_path)
