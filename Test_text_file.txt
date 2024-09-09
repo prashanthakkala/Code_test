@@ -1,26 +1,21 @@
-import pdfplumber
+import fitz  # PyMuPDF
 
-def extract_text_with_lines(pdf_path):
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            # Extract horizontal lines from the page
-            lines = [line for line in page.lines if line['width'] > line['height']]
-            
-            # Sort lines based on the y-position
-            lines.sort(key=lambda x: x['y0'], reverse=True)
-            
-            # Extract text between the lines
-            for i in range(len(lines) - 1):
-                top = lines[i]['y0']
-                bottom = lines[i + 1]['y0']
-                
-                # Define a cropping box to extract text within the region
-                cropped_page = page.within_bbox((0, bottom, page.width, top))
-                
-                # Extract text from the cropped region
-                text = cropped_page.extract_text()
-                
-                print(f"Text between line {i} and line {i + 1}:\n{text}\n{'-'*40}")
+# Open the PDF
+pdf_path = "your_pdf_with_highlighted_text.pdf"
+doc = fitz.open(pdf_path)
 
-# Provide the path to your PDF file
-extract_text_with_lines("your_file.pdf")
+# Iterate through the pages and remove highlight annotations
+for page_num in range(len(doc)):
+    page = doc.load_page(page_num)
+    
+    # Find and remove highlight annotations
+    for annot in page.annots():
+        if annot.type[0] == 8:  # Annotation type 8 corresponds to highlight
+            page.delete_annot(annot)
+
+# Save the modified PDF without highlights
+output_pdf = "output_without_highlight.pdf"
+doc.save(output_pdf)
+doc.close()
+
+print(f"Highlights removed. Saved to {output_pdf}")
