@@ -1,38 +1,43 @@
 import fitz  # PyMuPDF
+from PIL import Image
 
 def remove_yellow_background(pdf_path, output_path):
-    # Open the PDF
     pdf = fitz.open(pdf_path)
 
     # Iterate through each page
     for page_num in range(pdf.page_count):
         page = pdf.load_page(page_num)
+        
+        # Render page to an image
+        pix = page.get_pixmap()
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        
+        # Convert image to a format that supports alpha (transparency)
+        img = img.convert("RGBA")
+        data = img.getdata()
 
-        # Get all text instances
-        blocks = page.get_text("dict")["blocks"]
-        for block in blocks:
-            if block['type'] == 0:  # Text block
-                for line in block["lines"]:
-                    for span in line["spans"]:
-                        # Check if the background color is yellow
-                        bg_color = span.get("bg")
-                        if bg_color and bg_color == (1.0, 1.0, 0.0):  # RGB for yellow
-                            # Replace text with same content but no background color
-                            # Create a new text with the same content but without the highlight
-                            page.insert_text(
-                                (span["bbox"][0], span["bbox"][1]),
-                                span["text"],
-                                fontsize=span["size"],
-                                color=(0, 0, 0),  # Black text
-                                overlay=True
-                            )
-                            # Remove the original text with yellow background
-                            page.add_redaction_annot(
-                                fitz.Rect(span["bbox"]),
-                                fill=(1, 1, 1)  # White background to cover up
-                            )
-                            page.apply_redactions()
+        # Define yellow color range (RGB)
+        yellow = (255, 255, 0)
+        threshold = 200  # Threshold for similarity to yellow
 
+        new_data = []
+        for item in data:
+            # If the color is close to yellow, make it white
+            if abs(item[0] - yellow[0]) < threshold and abs(item[1] - yellow[1]) < threshold and abs(item[2] - yellow[2]) < threshold:
+                new_data.append((255, 255, 255, item[3]))  # Change to white
+            else:
+                new_data.append(item)
+
+        img.putdata(new_data)
+        
+        # Save the image as a temporary file
+        temp_image_path = "temp_page.png"
+        img.save(temp_image_path)
+        
+        # Create a new PDF with the modified image
+        pdf_page = pdf[page_num]
+        pdf_page.insert_image(pdf_page.rect, filename=temp_image_path, overlay=True)
+    
     # Save the modified PDF
     pdf.save(output_path)
     pdf.close()
