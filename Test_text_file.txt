@@ -1,33 +1,38 @@
-import fitz  # PyMuPDF
+from docx import Document
+from docx.oxml.ns import qn
 
-def remove_yellow_annotations(pdf_path, output_path):
-    pdf = fitz.open(pdf_path)
+def get_highlighting_color(run):
+    # Retrieve the highlight color from the run's XML
+    highlight = run._element.find(qn('w:highlight'))
+    if highlight is not None:
+        return highlight.get(qn('w:val'))
+    return None
 
-    # Iterate through each page
-    for page_num in range(pdf.page_count):
-        page = pdf.load_page(page_num)
-        
-        # Iterate through annotations on the page
-        annotations = page.annots()
-        if annotations:
-            for annot in annotations:
-                # Check if annotation is a highlight
-                if annot.type[0] == 8:  # Highlight annotation
-                    fill_color = annot.colors.get("fill")
-                    stroke_color = annot.colors.get("stroke")
-                    
-                    # Define yellow color
-                    yellow = (1.0, 1.0, 0.0)  # RGB for yellow
-                    
-                    # Check if fill or stroke color is yellow
-                    if fill_color == yellow or stroke_color == yellow:
-                        page.delete_annot(annot)  # Remove annotation
+def remove_highlighting(doc_path, output_path):
+    # Load the Word document
+    doc = Document(doc_path)
+    
+    highlighted_positions = []
 
-    # Save the modified PDF
-    pdf.save(output_path)
-    pdf.close()
+    # Iterate through paragraphs in the document
+    for para_num, para in enumerate(doc.paragraphs):
+        for run_num, run in enumerate(para.runs):
+            highlight_color = get_highlighting_color(run)
+            if highlight_color == 'yellow':
+                highlighted_positions.append((para_num, run_num, run.text))
+                # Remove the highlighting
+                run._element.clear_content()  # Remove highlight element
+
+    # Save the modified document
+    doc.save(output_path)
+
+    return highlighted_positions
 
 # Example usage
-pdf_path = "your_file.pdf"
-output_path = "output_no_yellow_annotations.pdf"
-remove_yellow_annotations(pdf_path, output_path)
+input_path = 'input.docx'   # Path to your input Word document
+output_path = 'output.docx' # Path to save the output Word document
+highlighted_positions = remove_highlighting(input_path, output_path)
+
+# Print the positions and texts of highlighted sections
+for para_num, run_num, text in highlighted_positions:
+    print(f'Paragraph {para_num + 1}, Run {run_num + 1}: {text}')
