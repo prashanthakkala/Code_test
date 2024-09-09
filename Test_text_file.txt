@@ -1,29 +1,23 @@
-import fitz  # PyMuPDF
+from docx import Document
+from docx.shared import RGBColor
 
-def remove_yellow_highlights(pdf_path, output_pdf):
-    # Open the PDF
-    pdf = fitz.open(pdf_path)
+def remove_yellow_highlights(docx_path, output_path):
+    # Open the Word document
+    doc = Document(docx_path)
+    
+    # Iterate through all paragraphs in the document
+    for para in doc.paragraphs:
+        for run in para.runs:
+            if run.font.highlight_color:
+                # Remove the highlight if it's yellow
+                # Yellow in Word is typically represented as 'yellow'
+                if run.font.highlight_color == 5:  # 5 corresponds to yellow highlight
+                    run.font.highlight_color = None  # Remove the highlight
 
-    # Iterate through each page
-    for page_num in range(pdf.page_count):
-        page = pdf.load_page(page_num)
-        # Get all annotations (includes highlights, etc.)
-        annotations = page.annots()
+    # Save the modified document
+    doc.save(output_path)
 
-        if annotations:
-            for annot in annotations:
-                # Check if the annotation is a highlight
-                if annot.type[0] == 8:  # Type 8 is a highlight
-                    color = annot.colors['stroke']
-                    # Check if it's yellow (RGB approx for yellow is (1, 1, 0))
-                    if color and color == [1.0, 1.0, 0.0]:
-                        page.delete_annot(annot)  # Remove the highlight
-
-    # Save the modified PDF
-    pdf.save(output_pdf)
-    pdf.close()
-
-# Example usage:
-pdf_path = "your_file.pdf"
-output_pdf = "output_no_yellow_highlight.pdf"
-remove_yellow_highlights(pdf_path, output_pdf)
+# Example usage
+docx_path = "your_file.docx"
+output_path = "output_without_yellow_highlight.docx"
+remove_yellow_highlights(docx_path, output_path)
