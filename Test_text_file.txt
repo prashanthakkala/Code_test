@@ -1,5 +1,4 @@
 import fitz  # PyMuPDF
-from PIL import Image
 
 def remove_yellow_background(pdf_path, output_path):
     pdf = fitz.open(pdf_path)
@@ -7,37 +6,23 @@ def remove_yellow_background(pdf_path, output_path):
     # Iterate through each page
     for page_num in range(pdf.page_count):
         page = pdf.load_page(page_num)
-        
-        # Render page to an image
-        pix = page.get_pixmap()
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-        
-        # Convert image to a format that supports alpha (transparency)
-        img = img.convert("RGBA")
-        data = img.getdata()
+        text_instances = page.get_text("dict")["blocks"]
 
-        # Define yellow color range (RGB)
-        yellow = (255, 255, 0)
-        threshold = 200  # Threshold for similarity to yellow
+        # Collect all text items with yellow background
+        yellow_items = []
+        for block in text_instances:
+            if block['type'] == 0:  # Text block
+                for line in block["lines"]:
+                    for span in line["spans"]:
+                        if 'bg' in span and span['bg'] == [1.0, 1.0, 0.0]:  # RGB for yellow
+                            yellow_items.append(span)
 
-        new_data = []
-        for item in data:
-            # If the color is close to yellow, make it white
-            if abs(item[0] - yellow[0]) < threshold and abs(item[1] - yellow[1]) < threshold and abs(item[2] - yellow[2]) < threshold:
-                new_data.append((255, 255, 255, item[3]))  # Change to white
-            else:
-                new_data.append(item)
+        # Remove yellow backgrounds
+        for span in yellow_items:
+            bbox = fitz.Rect(span['bbox'])
+            page.add_redaction_annot(bbox, fill=(1, 1, 1))  # Redact with white background
+            page.apply_redactions()
 
-        img.putdata(new_data)
-        
-        # Save the image as a temporary file
-        temp_image_path = "temp_page.png"
-        img.save(temp_image_path)
-        
-        # Create a new PDF with the modified image
-        pdf_page = pdf[page_num]
-        pdf_page.insert_image(pdf_page.rect, filename=temp_image_path, overlay=True)
-    
     # Save the modified PDF
     pdf.save(output_path)
     pdf.close()
