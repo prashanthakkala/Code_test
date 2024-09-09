@@ -1,23 +1,43 @@
-from docx import Document
-from docx.shared import RGBColor
+import fitz  # PyMuPDF
 
-def remove_yellow_highlights(docx_path, output_path):
-    # Open the Word document
-    doc = Document(docx_path)
-    
-    # Iterate through all paragraphs in the document
-    for para in doc.paragraphs:
-        for run in para.runs:
-            if run.font.highlight_color:
-                # Remove the highlight if it's yellow
-                # Yellow in Word is typically represented as 'yellow'
-                if run.font.highlight_color == 5:  # 5 corresponds to yellow highlight
-                    run.font.highlight_color = None  # Remove the highlight
+def remove_yellow_background(pdf_path, output_path):
+    # Open the PDF
+    pdf = fitz.open(pdf_path)
 
-    # Save the modified document
-    doc.save(output_path)
+    # Iterate through each page
+    for page_num in range(pdf.page_count):
+        page = pdf.load_page(page_num)
+
+        # Get all text instances
+        blocks = page.get_text("dict")["blocks"]
+        for block in blocks:
+            if block['type'] == 0:  # Text block
+                for line in block["lines"]:
+                    for span in line["spans"]:
+                        # Check if the background color is yellow
+                        bg_color = span.get("bg")
+                        if bg_color and bg_color == (1.0, 1.0, 0.0):  # RGB for yellow
+                            # Replace text with same content but no background color
+                            # Create a new text with the same content but without the highlight
+                            page.insert_text(
+                                (span["bbox"][0], span["bbox"][1]),
+                                span["text"],
+                                fontsize=span["size"],
+                                color=(0, 0, 0),  # Black text
+                                overlay=True
+                            )
+                            # Remove the original text with yellow background
+                            page.add_redaction_annot(
+                                fitz.Rect(span["bbox"]),
+                                fill=(1, 1, 1)  # White background to cover up
+                            )
+                            page.apply_redactions()
+
+    # Save the modified PDF
+    pdf.save(output_path)
+    pdf.close()
 
 # Example usage
-docx_path = "your_file.docx"
-output_path = "output_without_yellow_highlight.docx"
-remove_yellow_highlights(docx_path, output_path)
+pdf_path = "your_file.pdf"
+output_path = "output_no_yellow_background.pdf"
+remove_yellow_background(pdf_path, output_path)
