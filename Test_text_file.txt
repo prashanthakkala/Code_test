@@ -1,28 +1,29 @@
 import fitz  # PyMuPDF
 
-# Open the PDF file
-pdf_file = "your_pdf_file.pdf"  # Replace with the actual file path
-doc = fitz.open(pdf_file)
+def remove_yellow_highlights(pdf_path, output_pdf):
+    # Open the PDF
+    pdf = fitz.open(pdf_path)
 
-# Iterate over all the pages in the PDF
-for page_num in range(doc.page_count):
-    page = doc.load_page(page_num)  # Get the page
-    annot_list = page.annots()  # Get list of annotations
-    
-    # If there are annotations (such as highlights) on the page
-    if annot_list:
-        for annot in annot_list:
-            # Check if the annotation is a highlight (Type 8)
-            if annot.type[0] == 8:
-                # Set the highlight color to white (RGB: 1,1,1) to make it invisible
-                annot.set_colors(stroke=None, fill=[1, 1, 1])  # Set highlight color to white
-                annot.update()  # Apply the changes to the annotation
+    # Iterate through each page
+    for page_num in range(pdf.page_count):
+        page = pdf.load_page(page_num)
+        # Get all annotations (includes highlights, etc.)
+        annotations = page.annots()
 
-# Save the modified PDF as a new file
-output_pdf = "output_no_highlight_color.pdf"
-doc.save(output_pdf)
+        if annotations:
+            for annot in annotations:
+                # Check if the annotation is a highlight
+                if annot.type[0] == 8:  # Type 8 is a highlight
+                    color = annot.colors['stroke']
+                    # Check if it's yellow (RGB approx for yellow is (1, 1, 0))
+                    if color and color == [1.0, 1.0, 0.0]:
+                        page.delete_annot(annot)  # Remove the highlight
 
-# Close the PDF document
-doc.close()
+    # Save the modified PDF
+    pdf.save(output_pdf)
+    pdf.close()
 
-print(f"PDF saved without highlight colors as {output_pdf}")
+# Example usage:
+pdf_path = "your_file.pdf"
+output_pdf = "output_no_yellow_highlight.pdf"
+remove_yellow_highlights(pdf_path, output_pdf)
