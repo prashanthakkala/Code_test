@@ -1,27 +1,37 @@
 import pdfplumber
-from lxml import etree
+import pandas as pd
 
-def pdf_to_html(pdf_path, output_html):
+# Function to extract tables from PDF and convert to HTML
+def pdf_to_html_with_tables(pdf_path, output_html_path):
     # Open the PDF file
     with pdfplumber.open(pdf_path) as pdf:
-        html = etree.Element("html")
-        body = etree.SubElement(html, "body")
+        html_content = "<html>\n<head>\n<title>PDF to HTML</title>\n</head>\n<body>\n"
         
-        # Extract content from each page
-        for page in pdf.pages:
-            page_div = etree.SubElement(body, "div")
-            page_text = page.extract_text()
+        # Iterate through each page
+        for page_num, page in enumerate(pdf.pages):
+            html_content += f"<h2>Page {page_num + 1}</h2>\n"
             
-            # Add page content as paragraphs in the HTML body
-            if page_text:
-                for line in page_text.split("\n"):
-                    p = etree.SubElement(page_div, "p")
-                    p.text = line
-        
-        # Write HTML content to a file
-        html_str = etree.tostring(html, pretty_print=True, method="html", encoding="unicode")
-        with open(output_html, "w") as f:
-            f.write(html_str)
+            # Extract text (if needed)
+            text = page.extract_text()
+            if text:
+                html_content += f"<pre>{text}</pre>\n"
+            
+            # Extract tables
+            tables = page.extract_tables()
+            if tables:
+                for table_num, table in enumerate(tables):
+                    df = pd.DataFrame(table[1:], columns=table[0])  # Convert the table to a DataFrame
+                    html_content += f"<h3>Table {table_num + 1}</h3>\n"
+                    html_content += df.to_html(index=False, header=True)  # Convert DataFrame to HTML
+                    
+        html_content += "</body>\n</html>"
+
+    # Write the HTML content to the output file
+    with open(output_html_path, 'w', encoding='utf-8') as html_file:
+        html_file.write(html_content)
 
 # Example usage
-pdf_to_html("example.pdf", "output.html")
+pdf_path = "sample_with_tables.pdf"
+output_html_path = "output_with_tables.html"
+pdf_to_html_with_tables(pdf_path, output_html_path)
+print(f"HTML file with tables saved as {output_html_path}")
