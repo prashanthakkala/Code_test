@@ -1,38 +1,27 @@
-from docx import Document
-from docx.oxml.ns import qn
+import pdfplumber
+from lxml import etree
 
-def get_highlighting_color(run):
-    # Retrieve the highlight color from the run's XML
-    highlight = run._element.find(qn('w:highlight'))
-    if highlight is not None:
-        return highlight.get(qn('w:val'))
-    return None
-
-def remove_highlighting(doc_path, output_path):
-    # Load the Word document
-    doc = Document(doc_path)
-    
-    highlighted_positions = []
-
-    # Iterate through paragraphs in the document
-    for para_num, para in enumerate(doc.paragraphs):
-        for run_num, run in enumerate(para.runs):
-            highlight_color = get_highlighting_color(run)
-            if highlight_color == 'yellow':
-                highlighted_positions.append((para_num, run_num, run.text))
-                # Remove the highlighting
-                run._element.clear_content()  # Remove highlight element
-
-    # Save the modified document
-    doc.save(output_path)
-
-    return highlighted_positions
+def pdf_to_html(pdf_path, output_html):
+    # Open the PDF file
+    with pdfplumber.open(pdf_path) as pdf:
+        html = etree.Element("html")
+        body = etree.SubElement(html, "body")
+        
+        # Extract content from each page
+        for page in pdf.pages:
+            page_div = etree.SubElement(body, "div")
+            page_text = page.extract_text()
+            
+            # Add page content as paragraphs in the HTML body
+            if page_text:
+                for line in page_text.split("\n"):
+                    p = etree.SubElement(page_div, "p")
+                    p.text = line
+        
+        # Write HTML content to a file
+        html_str = etree.tostring(html, pretty_print=True, method="html", encoding="unicode")
+        with open(output_html, "w") as f:
+            f.write(html_str)
 
 # Example usage
-input_path = 'input.docx'   # Path to your input Word document
-output_path = 'output.docx' # Path to save the output Word document
-highlighted_positions = remove_highlighting(input_path, output_path)
-
-# Print the positions and texts of highlighted sections
-for para_num, run_num, text in highlighted_positions:
-    print(f'Paragraph {para_num + 1}, Run {run_num + 1}: {text}')
+pdf_to_html("example.pdf", "output.html")
