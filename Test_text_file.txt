@@ -1,78 +1,24 @@
-import pdfplumber
-from reportlab.pdfgen import canvas
-from PyPDF2 import PdfReader, PdfWriter
+import pyodbc
+import pandas as pd
 
-# Step 1: Create a canvas for drawing lines
-def create_pdf_with_lines(output_pdf_path, width, height, line_positions):
-    # Create a new PDF with ReportLab
-    c = canvas.Canvas(output_pdf_path, pagesize=(width, height))
-    
-    # Draw vertical and horizontal lines based on the provided positions
-    for line in line_positions:
-        if line['type'] == 'h':  # Horizontal line
-            c.line(0, line['position'], width, line['position'])
-        elif line['type'] == 'v':  # Vertical line
-            c.line(line['position'], 0, line['position'], height)
+# Establish connection to SQL Server
+conn = pyodbc.connect(
+    'DRIVER={SQL Server};'
+    'SERVER=your_server_name;'
+    'DATABASE=your_database_name;'
+    'UID=your_username;'
+    'PWD=your_password'
+)
 
-    # Finalize the page
-    c.showPage()
-    c.save()
+# Parameters for the stored procedure
+param1_value = 'some_value'
+param2_value = 1234
 
-# Step 2: Overlay the drawn lines on the original PDF
-def overlay_lines_on_pdf(input_pdf_path, output_pdf_with_lines, output_final_pdf_path):
-    # Read the original PDF
-    with open(input_pdf_path, 'rb') as original_pdf:
-        reader = PdfReader(original_pdf)
-        
-        # Read the PDF with lines
-        with open(output_pdf_with_lines, 'rb') as lines_pdf:
-            lines_reader = PdfReader(lines_pdf)
-            
-            # Create a new PDF writer to save the final output
-            writer = PdfWriter()
-            
-            # Overlay each page with lines onto the original page
-            for page_num in range(len(reader.pages)):
-                original_page = reader.pages[page_num]
-                lines_page = lines_reader.pages[0]  # Since our line PDF is only one page
-                original_page.merge_page(lines_page)
-                writer.add_page(original_page)
-            
-            # Write the final PDF with lines
-            with open(output_final_pdf_path, 'wb') as final_output:
-                writer.write(final_output)
+# Execute the stored procedure with parameters and load result into a DataFrame
+df = pd.read_sql_query("{CALL your_procedure_name (?, ?)}", conn, params=(param1_value, param2_value))
 
-# Step 3: Full process to extract, draw lines, and save final PDF
-def add_lines_to_pdf(input_pdf_path, output_pdf_path, line_positions):
-    # Extract dimensions of the first page of the PDF using pdfplumber
-    with pdfplumber.open(input_pdf_path) as pdf:
-        first_page = pdf.pages[0]
-        width = first_page.width
-        height = first_page.height
+# Close the connection
+conn.close()
 
-    # Create a PDF with lines
-    temp_pdf_with_lines = "temp_lines.pdf"
-    create_pdf_with_lines(temp_pdf_with_lines, width, height, line_positions)
-
-    # Overlay lines on the original PDF
-    overlay_lines_on_pdf(input_pdf_path, temp_pdf_with_lines, output_pdf_path)
-
-# Example usage
-
-# Define line positions: 'type' is either 'h' for horizontal or 'v' for vertical
-# 'position' is the coordinate (in points) where the line should be drawn
-line_positions = [
-    {'type': 'h', 'position': 400},  # Horizontal line at y=400
-    {'type': 'h', 'position': 200},  # Horizontal line at y=200
-    {'type': 'v', 'position': 100},  # Vertical line at x=100
-    {'type': 'v', 'position': 300},  # Vertical line at x=300
-]
-
-# Path to input PDF and the output PDF
-input_pdf_path = "sample.pdf"
-output_pdf_path = "output_with_lines.pdf"
-
-# Add lines to the PDF
-add_lines_to_pdf(input_pdf_path, output_pdf_path, line_positions)
-
-print(f"PDF with lines saved as {output_pdf_path}")
+# Display the DataFrame
+print(df)
