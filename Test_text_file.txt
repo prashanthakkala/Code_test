@@ -1,24 +1,19 @@
-import pyodbc
-import pandas as pd
+from PyPDF2 import PdfReader, PdfWriter
 
-# Establish connection to SQL Server
-conn = pyodbc.connect(
-    'DRIVER={SQL Server};'
-    'SERVER=your_server_name;'
-    'DATABASE=your_database_name;'
-    'UID=your_username;'
-    'PWD=your_password'
-)
+# Open the original PDF
+input_pdf_path = "path/to/original_pdf.pdf"
+output_pdf_path = "path/to/output_pdf.pdf"
 
-# Parameters for the stored procedure
-param1_value = 'some_value'
-param2_value = 1234
+reader = PdfReader(input_pdf_path)
+writer = PdfWriter()
 
-# Execute the stored procedure with parameters and load result into a DataFrame
-df = pd.read_sql_query("{CALL your_procedure_name (?, ?)}", conn, params=(param1_value, param2_value))
+# Extract the first 10 pages
+for page_num in range(10):  # Pages 0-9 (i.e., first 10 pages)
+    page = reader.pages[page_num]
+    writer.add_page(page)
 
-# Close the connection
-conn.close()
+# Save the extracted pages to a new PDF
+with open(output_pdf_path, "wb") as output_pdf:
+    writer.write(output_pdf)
 
-# Display the DataFrame
-print(df)
+print(f"New PDF with 10 pages saved to {output_pdf_path}")
