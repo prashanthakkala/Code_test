@@ -1,19 +1,43 @@
-from PyPDF2 import PdfReader, PdfWriter
+import pdfplumber
+import fitz  # PyMuPDF
 
-# Open the original PDF
-input_pdf_path = "path/to/original_pdf.pdf"
-output_pdf_path = "path/to/output_pdf.pdf"
+def draw_vertical_lines_with_plumber(pdf_path, output_path):
+    # Open the PDF with pdfplumber to analyze text blocks
+    with pdfplumber.open(pdf_path) as pdf:
+        # Open the same PDF with fitz to draw lines
+        doc = fitz.open(pdf_path)
 
-reader = PdfReader(input_pdf_path)
-writer = PdfWriter()
+        for page_num, page in enumerate(pdf.pages):
+            # Extract text blocks using pdfplumber
+            text_blocks = page.extract_words()  # List of dicts with text block coordinates
 
-# Extract the first 10 pages
-for page_num in range(10):  # Pages 0-9 (i.e., first 10 pages)
-    page = reader.pages[page_num]
-    writer.add_page(page)
+            # Example: Loop over pairs of text blocks and draw vertical lines
+            # (Adjust the logic as needed for your specific condition)
+            for i in range(len(text_blocks) - 1):
+                top_block = text_blocks[i]
+                bottom_block = text_blocks[i + 1]
 
-# Save the extracted pages to a new PDF
-with open(output_pdf_path, "wb") as output_pdf:
-    writer.write(output_pdf)
+                # Define x-coordinate for the vertical line
+                # (Here, we take the average x position between left sides of top and bottom blocks)
+                x_coord = (top_block['x0'] + bottom_block['x0']) / 2
 
-print(f"New PDF with 10 pages saved to {output_pdf_path}")
+                # Define y0 as bottom of top block and y1 as top of bottom block
+                y0 = top_block['bottom']
+                y1 = bottom_block['top']
+
+                # Load the page with fitz to draw on it
+                fitz_page = doc.load_page(page_num)
+                shape = fitz_page.new_shape()
+
+                # Draw vertical line between top and bottom blocks
+                shape.draw_line((x_coord, y0), (x_coord, y1))
+                shape.finish(stroke=True)
+                shape.commit()  # Commit the drawing onto the page
+
+        doc.save(output_path)  # Save the updated PDF
+        doc.close()
+
+# Example usage
+pdf_path = "input.pdf"
+output_path = "output.pdf"
+draw_vertical_lines_with_plumber(pdf_path, output_path)
