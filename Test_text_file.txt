@@ -1,49 +1,16 @@
-import pdfplumber
-import fitz  # PyMuPDF
+import re
 
-def draw_vertical_lines_based_on_condition(pdf_path, output_path):
-    # Open the PDF with pdfplumber to analyze text blocks
-    with pdfplumber.open(pdf_path) as pdf:
-        # Open the same PDF with fitz to draw lines
-        doc = fitz.open(pdf_path)
+# Sample text
+text = """
+Effective: 11/02/2020
+Effective: 11/02/2020
+Effective: 12/15/2021
+"""
 
-        for page_num, page in enumerate(pdf.pages):
-            # Extract text blocks using pdfplumber
-            text_blocks = page.extract_words()  # List of dicts with text block coordinates
+# Updated regex pattern to capture unique dates after "Effective"
+pattern = r'Effective\s*:\s*(\d{2}/\d{2}/\d{4})'
 
-            # Sort text_blocks by the top y-coordinate (top-to-bottom order)
-            text_blocks = sorted(text_blocks, key=lambda x: x['top'])
+# Find all matches and remove duplicates by converting to a set
+unique_dates = list(set(re.findall(pattern, text)))
 
-            # Load the page with fitz to draw on it
-            fitz_page = doc.load_page(page_num)
-            shape = fitz_page.new_shape()
-
-            # Loop through the text blocks
-            for i in range(2, len(text_blocks)):  # Start from 2 because we need to check "before -2"
-                current_block = text_blocks[i]
-                previous_block = text_blocks[i - 2]  # The block 2 steps before
-
-                # Check the condition: current_block follows previous_block
-                if current_block['top'] < previous_block['bottom']:  # Modify condition as needed
-                    # Draw a vertical line between the top and bottom of the previous and current blocks
-
-                    # Use the average x0 of the two blocks as the x position of the vertical line
-                    x_coord = (previous_block['x0'] + current_block['x0']) / 2
-                    
-                    # y0 is the bottom of the previous block, and y1 is the top of the current block
-                    y0 = previous_block['bottom']
-                    y1 = current_block['top']
-
-                    # Draw vertical line between the two blocks
-                    shape.draw_line((x_coord, y0), (x_coord, y1))
-
-            shape.finish(stroke=True)
-            shape.commit()  # Commit the drawing onto the page
-
-        doc.save(output_path)  # Save the updated PDF
-        doc.close()
-
-# Example usage
-pdf_path = "input.pdf"
-output_path = "output.pdf"
-draw_vertical_lines_based_on_condition(pdf_path, output_path)
+print(unique_dates)
