@@ -1,16 +1,27 @@
-import re
+import pandas as pd
+import numpy as np
 
-# Sample text
-text = """
-Effective: 11/02/2020
-Effective: 11/02/2020
-Effective: 12/15/2021
-"""
+# Sample DataFrame
+data = {
+    0: [np.nan, "", np.nan, "Value in 0", np.nan],
+    1: ["Value in 1A", "Value in 1B", "Value in 1C", np.nan, np.nan],
+    2: ["Value in 2A", "Value in 2B", "Value in 2C", "Value in 2D", np.nan],
+}
+df = pd.DataFrame(data)
 
-# Updated regex pattern to capture unique dates after "Effective"
-pattern = r'Effective\s*:\s*(\d{2}/\d{2}/\d{4})'
+print("Original DataFrame:")
+print(df)
 
-# Find all matches and remove duplicates by converting to a set
-unique_dates = list(set(re.findall(pattern, text)))
+# Extract all non-NaN values from columns 1 and 2
+non_nan_values = pd.concat([df[1].dropna(), df[2].dropna()])
 
-print(unique_dates)
+# Fill NaN/empty rows in column 0 with these values in order
+fill_idx = 0  # Keep track of the filling index
+for idx in range(len(df)):
+    if pd.isna(df.loc[idx, 0]) or df.loc[idx, 0] == "":
+        if fill_idx < len(non_nan_values):
+            df.loc[idx, 0] = non_nan_values.iloc[fill_idx]
+            fill_idx += 1
+
+print("\nUpdated DataFrame:")
+print(df)
