@@ -11,12 +11,14 @@ main_df = pd.DataFrame(data)
 
 # String to search
 search_string = "cost if you use"
-replacement_text = "cost if you use the in-network provider"
 
-# Replace rows with the specific text
-main_df.loc[
-    main_df["Column1"].str.contains(search_string, na=False), 
-    ["Column1", "Column2", "Column3"]
-] = replacement_text
+# Find rows with the string
+rows_to_remove = main_df[main_df["Column1"].str.contains(search_string, na=False)].index
 
-print(main_df)
+# Include subsequent rows
+rows_to_remove = rows_to_remove.union(rows_to_remove + 1)
+
+# Remove these rows from the DataFrame
+cleaned_df = main_df.drop(rows_to_remove, errors="ignore").reset_index(drop=True)
+
+print(cleaned_df)
