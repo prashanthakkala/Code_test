@@ -1,27 +1,22 @@
 import pandas as pd
-import numpy as np
 
-# Sample DataFrame
+# Example DataFrame
 data = {
-    0: [np.nan, "", np.nan, "Value in 0", np.nan],
-    1: ["Value in 1A", "Value in 1B", "Value in 1C", np.nan, np.nan],
-    2: ["Value in 2A", "Value in 2B", "Value in 2C", "Value in 2D", np.nan],
+    "ID": [1, 2, 3, 4, 5, 6],
+    "Column1": ["Normal data", "cost if you use ...", "Another normal row", "Example", "cost if you use here", "More data"],
+    "Column2": ["A", "B", "C", "D", "E", "F"],
+    "Column3": [100, 200, 300, 400, 500, 600]
 }
-df = pd.DataFrame(data)
+main_df = pd.DataFrame(data)
 
-print("Original DataFrame:")
-print(df)
+# String to search
+search_string = "cost if you use"
+replacement_text = "cost if you use the in-network provider"
 
-# Extract all non-NaN values from columns 1 and 2
-non_nan_values = pd.concat([df[1].dropna(), df[2].dropna()])
+# Replace rows with the specific text
+main_df.loc[
+    main_df["Column1"].str.contains(search_string, na=False), 
+    ["Column1", "Column2", "Column3"]
+] = replacement_text
 
-# Fill NaN/empty rows in column 0 with these values in order
-fill_idx = 0  # Keep track of the filling index
-for idx in range(len(df)):
-    if pd.isna(df.loc[idx, 0]) or df.loc[idx, 0] == "":
-        if fill_idx < len(non_nan_values):
-            df.loc[idx, 0] = non_nan_values.iloc[fill_idx]
-            fill_idx += 1
-
-print("\nUpdated DataFrame:")
-print(df)
+print(main_df)
