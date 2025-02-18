@@ -1,24 +1,52 @@
-import pandas as pd
+Certainly! Below is a Python implementation that uses the `ocrmypdf` library to convert a scanned PDF into a searchable and extractable PDF.
 
-# Example DataFrame
-data = {
-    "ID": [1, 2, 3, 4, 5, 6],
-    "Column1": ["Normal data", "cost if you use ...", "Another normal row", "Example", "cost if you use here", "More data"],
-    "Column2": ["A", "B", "C", "D", "E", "F"],
-    "Column3": [100, 200, 300, 400, 500, 600]
-}
-main_df = pd.DataFrame(data)
+### Prerequisites:
+1. Install the `ocrmypdf` library:
+   ```bash
+   pip install ocrmypdf
+   ```
 
-# String to search
-search_string = "cost if you use"
+2. Ensure you have Tesseract OCR installed on your system. You can download it from [here](https://github.com/tesseract-ocr/tesseract).
 
-# Find rows with the string
-rows_to_remove = main_df[main_df["Column1"].str.contains(search_string, na=False)].index
+### Python Code:
+```python
+import ocrmypdf
 
-# Include subsequent rows
-rows_to_remove = rows_to_remove.union(rows_to_remove + 1)
+def convert_to_searchable_pdf(input_pdf_path, output_pdf_path):
+    """
+    Converts a scanned PDF into a searchable and extractable PDF using OCR.
 
-# Remove these rows from the DataFrame
-cleaned_df = main_df.drop(rows_to_remove, errors="ignore").reset_index(drop=True)
+    :param input_pdf_path: Path to the input scanned PDF file.
+    :param output_pdf_path: Path to save the output searchable PDF file.
+    """
+    try:
+        # Run OCRmyPDF to convert the scanned PDF into a searchable PDF
+        ocrmypdf.ocr(input_pdf_path, output_pdf_path, deskew=True, optimize=3)
+        print(f"Successfully converted {input_pdf_path} to a searchable PDF: {output_pdf_path}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
-print(cleaned_df)
+# Example usage
+input_pdf = "scanned_document.pdf"  # Replace with your input PDF file path
+output_pdf = "searchable_document.pdf"  # Replace with your desired output PDF file path
+
+convert_to_searchable_pdf(input_pdf, output_pdf)
+```
+
+### Explanation:
+1. **`ocrmypdf.ocr()`**:
+   - This function performs OCR on the input PDF and saves the output as a searchable PDF.
+   - The `deskew=True` option automatically corrects skewed pages.
+   - The `optimize=3` option optimizes the PDF for smaller file size and better performance.
+
+2. **Input and Output Paths**:
+   - Replace `scanned_document.pdf` with the path to your scanned PDF.
+   - Replace `searchable_document.pdf` with the desired output file name.
+
+### Example:
+If you have a scanned PDF named `scanned.pdf` and want to create a searchable PDF named `searchable.pdf`, run:
+```python
+convert_to_searchable_pdf("scanned.pdf", "searchable.pdf")
+```
+
+This will generate a searchable PDF with embedded text that can be extracted or searched. Let me know if you need further assistance!
