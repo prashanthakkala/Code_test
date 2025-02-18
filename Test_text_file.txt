@@ -1,25 +1,18 @@
-Certainly! Below is a Python implementation that uses the `ocrmypdf` library to convert a scanned PDF into a searchable and extractable PDF.
-
-### Prerequisites:
-1. Install the `ocrmypdf` library:
-   ```bash
-   pip install ocrmypdf
-   ```
-
-2. Ensure you have Tesseract OCR installed on your system. You can download it from [here](https://github.com/tesseract-ocr/tesseract).
-
-### Python Code:
-```python
 import ocrmypdf
 
-def convert_to_searchable_pdf(input_pdf_path, output_pdf_path):
+def convert_to_searchable_pdf(input_pdf_path, output_pdf_path, tesseract_path=None):
     """
     Converts a scanned PDF into a searchable and extractable PDF using OCR.
 
     :param input_pdf_path: Path to the input scanned PDF file.
     :param output_pdf_path: Path to save the output searchable PDF file.
+    :param tesseract_path: Path to the Tesseract OCR executable (optional).
     """
     try:
+        # Set the Tesseract path if provided
+        if tesseract_path:
+            ocrmypdf.configure(tesseract_cmd=tesseract_path)
+
         # Run OCRmyPDF to convert the scanned PDF into a searchable PDF
         ocrmypdf.ocr(input_pdf_path, output_pdf_path, deskew=True, optimize=3)
         print(f"Successfully converted {input_pdf_path} to a searchable PDF: {output_pdf_path}")
@@ -29,24 +22,6 @@ def convert_to_searchable_pdf(input_pdf_path, output_pdf_path):
 # Example usage
 input_pdf = "scanned_document.pdf"  # Replace with your input PDF file path
 output_pdf = "searchable_document.pdf"  # Replace with your desired output PDF file path
+tesseract_path = r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Replace with your Tesseract path
 
-convert_to_searchable_pdf(input_pdf, output_pdf)
-```
-
-### Explanation:
-1. **`ocrmypdf.ocr()`**:
-   - This function performs OCR on the input PDF and saves the output as a searchable PDF.
-   - The `deskew=True` option automatically corrects skewed pages.
-   - The `optimize=3` option optimizes the PDF for smaller file size and better performance.
-
-2. **Input and Output Paths**:
-   - Replace `scanned_document.pdf` with the path to your scanned PDF.
-   - Replace `searchable_document.pdf` with the desired output file name.
-
-### Example:
-If you have a scanned PDF named `scanned.pdf` and want to create a searchable PDF named `searchable.pdf`, run:
-```python
-convert_to_searchable_pdf("scanned.pdf", "searchable.pdf")
-```
-
-This will generate a searchable PDF with embedded text that can be extracted or searched. Let me know if you need further assistance!
+convert_to_searchable_pdf(input_pdf, output_pdf, tesseract_path)
