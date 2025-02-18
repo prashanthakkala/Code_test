@@ -1,27 +1,58 @@
 import ocrmypdf
+import pdfplumber
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
-def convert_to_searchable_pdf(input_pdf_path, output_pdf_path, tesseract_path=None):
-    """
-    Converts a scanned PDF into a searchable and extractable PDF using OCR.
+# Step 1: OCR the image-based PDF to make text searchable
+input_pdf = "input.pdf"
+ocr_pdf = "ocr_output.pdf"
 
-    :param input_pdf_path: Path to the input scanned PDF file.
-    :param output_pdf_path: Path to save the output searchable PDF file.
-    :param tesseract_path: Path to the Tesseract OCR executable (optional).
-    """
-    try:
-        # Set the Tesseract path if provided
-        if tesseract_path:
-            ocrmypdf.configure(tesseract_cmd=tesseract_path)
+# Run OCR using ocrmypdf
+ocrmypdf.ocr(input_pdf, ocr_pdf, deskew=True, clean=True, force_ocr=True)
 
-        # Run OCRmyPDF to convert the scanned PDF into a searchable PDF
-        ocrmypdf.ocr(input_pdf_path, output_pdf_path, deskew=True, optimize=3)
-        print(f"Successfully converted {input_pdf_path} to a searchable PDF: {output_pdf_path}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+# Step 2: Extract text and lines using pdfplumber
+output_text = []
+output_lines = []
 
-# Example usage
-input_pdf = "scanned_document.pdf"  # Replace with your input PDF file path
-output_pdf = "searchable_document.pdf"  # Replace with your desired output PDF file path
-tesseract_path = r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Replace with your Tesseract path
+with pdfplumber.open(ocr_pdf) as pdf:
+    for page in pdf.pages:
+        # Extract text
+        text = page.extract_text()
+        output_text.append(f"Page {page.page_number}\n{text}\n")
+        
+        # Extract lines
+        lines = page.lines
+        output_lines.append({
+            "page": page.page_number,
+            "lines": [{"x0": line["x0"], "y0": line["y0"], 
+                      "x1": line["x1"], "y1": line["y1"]} for line in lines]
+        })
 
-convert_to_searchable_pdf(input_pdf, output_pdf, tesseract_path)
+# Step 3: Create a new PDF with extracted data
+output_pdf = "extracted_data.pdf"
+c = canvas.Canvas(output_pdf, pagesize=letter)
+
+# Add extracted text
+text = c.beginText(40, 750)
+text.setFont("Helvetica", 12)
+for page_text in output_text:
+    text.textLines(page_text)
+c.drawText(text)
+
+# Add extracted lines visualization
+c.showPage()  # New page for lines visualization
+for line_data in output_lines:
+    c.setFont("Helvetica", 12)
+    c.drawString(40, 750, f"Lines from Page {line_data['page']}:")
+    y_position = 730
+    for line in line_data["lines"]:
+        # Draw line coordinates
+        c.drawString(50, y_position, 
+                    f"Line from ({line['x0']:.1f}, {line['y0']:.1f}) to ({line['x1']:.1f}, {line['y1']:.1f})")
+        y_position -= 15
+    c.showPage()
+
+c.save()
+
+print(f"OCR processed PDF saved as: {ocr_pdf}")
+print(f"Extracted data PDF saved as: {output_pdf}")
