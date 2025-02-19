@@ -1,16 +1,17 @@
-
-# Assuming the text_blocks[i] contains the information about the start and end coordinates of the lines you want to draw
+# Assuming you're checking for the "Questions:" block, and you want to draw a vertical line
 if "Questions:" in text_blocks[i][4]:
-    x_temp = text_blocks[i][0]  # x-coordinate where the vertical line will start (based on your text block)
-    y_start = text_blocks[i][1] - 15  # y-coordinate of the starting point (slightly above the current block)
-    y_end = text_blocks[i][3] + 15  # y-coordinate of the ending point (slightly below the current block)
+    x_temp = text_blocks[i][0]  # The x-coordinate where the vertical line will be drawn (based on your text block)
+    
+    # For top-to-bottom, we will use the entire height of the page.
+    y_start = 0  # Start at the top of the page (y-coordinate = 0)
+    y_end = page.height  # End at the bottom of the page (y-coordinate = height of the page)
 
-    # Create a new shape for the vertical line
+    # Create a new shape object
     shape = page.new_shape()
 
-    # Draw the vertical line from (x_temp, y_start) to (x_temp, y_end)
+    # Draw the vertical line from (x_temp, 0) to (x_temp, page.height)
     shape.draw_line((x_temp, y_start), (x_temp, y_end))
 
-    # Finish and commit the line drawing with a width of 2
+    # Finish and commit the line drawing with a width of 2 (or adjust the width if needed)
     shape.finish(width=2)
     shape.commit()
