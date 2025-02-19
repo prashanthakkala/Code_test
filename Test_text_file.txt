@@ -1,27 +1,16 @@
-import pdfplumber
 
-def extract_tables(pdf_file):
-    with pdfplumber.open(pdf_file) as pdf:
-        for page_number, page in enumerate(pdf.pages, start=1):
-            print(f"Extracting tables from page {page_number}")
-            
-            # Adjusting the settings for better table extraction
-            tables = page.extract_tables(
-                table_settings={
-                    "vertical_strategy": "lines",    # Detects vertical lines (for columns)
-                    "horizontal_strategy": "lines",  # Detects horizontal lines (for rows)
-                    "snap_tolerance": 3,             # Controls the tolerance for detecting lines
-                    "min_words_row": 1,              # Minimum words per row
-                    "edge_min_length": 3,            # Minimum length for detecting edges (in pixels)
-                }
-            )
-            
-            if tables:
-                for table in tables:
-                    print(table)  # Output the table content as a list of rows (lists)
-            else:
-                print("No tables found on page", page_number)
+# Assuming the text_blocks[i] contains the information about the start and end coordinates of the lines you want to draw
+if "Questions:" in text_blocks[i][4]:
+    x_temp = text_blocks[i][0]  # x-coordinate where the vertical line will start (based on your text block)
+    y_start = text_blocks[i][1] - 15  # y-coordinate of the starting point (slightly above the current block)
+    y_end = text_blocks[i][3] + 15  # y-coordinate of the ending point (slightly below the current block)
 
-# Example usage:
-pdf_file = "ocr_output.pdf"  # Replace with your OCR-processed PDF file
-extract_tables(pdf_file)
+    # Create a new shape for the vertical line
+    shape = page.new_shape()
+
+    # Draw the vertical line from (x_temp, y_start) to (x_temp, y_end)
+    shape.draw_line((x_temp, y_start), (x_temp, y_end))
+
+    # Finish and commit the line drawing with a width of 2
+    shape.finish(width=2)
+    shape.commit()
