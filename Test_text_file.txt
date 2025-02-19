@@ -1,17 +1,27 @@
-from pdf2docx import Converter
+import pdfplumber
 
-def convert_pdf_to_word(pdf_file, word_file):
-    # Initialize the Converter with the PDF file
-    cv = Converter(pdf_file)
-    
-    # Convert the PDF to Word (DOCX)
-    cv.convert(word_file, start=0, end=None)
-    
-    # Close the Converter object
-    cv.close()
+def extract_tables(pdf_file):
+    with pdfplumber.open(pdf_file) as pdf:
+        for page_number, page in enumerate(pdf.pages, start=1):
+            print(f"Extracting tables from page {page_number}")
+            
+            # Adjusting the settings for better table extraction
+            tables = page.extract_tables(
+                table_settings={
+                    "vertical_strategy": "lines",    # Detects vertical lines (for columns)
+                    "horizontal_strategy": "lines",  # Detects horizontal lines (for rows)
+                    "snap_tolerance": 3,             # Controls the tolerance for detecting lines
+                    "min_words_row": 1,              # Minimum words per row
+                    "edge_min_length": 3,            # Minimum length for detecting edges (in pixels)
+                }
+            )
+            
+            if tables:
+                for table in tables:
+                    print(table)  # Output the table content as a list of rows (lists)
+            else:
+                print("No tables found on page", page_number)
 
 # Example usage:
-pdf_file = 'example.pdf'  # Replace with your PDF file path
-word_file = 'output.docx'  # The desired output Word file
-
-convert_pdf_to_word(pdf_file, word_file)
+pdf_file = "ocr_output.pdf"  # Replace with your OCR-processed PDF file
+extract_tables(pdf_file)
