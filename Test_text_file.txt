@@ -1,17 +1,29 @@
-# Assuming you're checking for the "Questions:" block, and you want to draw a vertical line
-if "Questions:" in text_blocks[i][4]:
-    x_temp = text_blocks[i][0]  # The x-coordinate where the vertical line will be drawn (based on your text block)
-    
-    # For top-to-bottom, we will use the entire height of the page.
-    y_start = 0  # Start at the top of the page (y-coordinate = 0)
-    y_end = page.height  # End at the bottom of the page (y-coordinate = height of the page)
+import pandas as pd
 
-    # Create a new shape object
-    shape = page.new_shape()
+# Example DataFrame (df2) with 60 rows and 10 columns
+df2 = pd.DataFrame({
+    0: range(60),
+    1: range(60, 120),
+    2: ['normal'] * 60,
+    3: range(120, 180),
+    4: range(180, 240),
+    5: range(240, 300),
+    6: range(300, 360),
+    7: range(360, 420),
+    8: range(420, 480),
+    9: range(480, 540)
+})
 
-    # Draw the vertical line from (x_temp, 0) to (x_temp, page.height)
-    shape.draw_line((x_temp, y_start), (x_temp, y_end))
+# For demonstration, set some values in column index 2 to "doctor services"
+df2.loc[10, 2] = "doctor services"
+df2.loc[30, 2] = "doctor services"
 
-    # Finish and commit the line drawing with a width of 2 (or adjust the width if needed)
-    shape.finish(width=2)
-    shape.commit()
+# Loop through indices in reverse order to avoid index shifting issues
+for i in reversed(df2.index):
+    if "doctor services" in str(df2.loc[i, 2]):
+        # Create a new row with 10 columns (adjust values as needed; here we fill with zeros)
+        new_row = pd.DataFrame([[0] * df2.shape[1]], columns=df2.columns)
+        # Insert the new row before the current row using pd.concat
+        df2 = pd.concat([df2.iloc[:i], new_row, df2.iloc[i:]], ignore_index=True)
+
+print(df2)
