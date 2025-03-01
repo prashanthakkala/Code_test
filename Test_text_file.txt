@@ -1,1 +1,44 @@
-https://www.cisco.com/c/en/us/support/docs/licensing/common-licensing-issues/how-to/license-management/lic222298-how-can-i-transfer-or-move-license-betwe.html
+import requests
+from bs4 import BeautifulSoup
+import yt_dlp
+
+# Step 1: Get the HTML content of the page
+url = "http://example.com/page-with-video"  # Replace with the page URL containing the video
+response = requests.get(url)
+
+if response.status_code != 200:
+    print("Failed to fetch the webpage.")
+    exit()
+
+# Step 2: Parse the HTML to find the video tag or source link
+soup = BeautifulSoup(response.text, 'html.parser')
+video_tag = soup.find('video')
+
+if not video_tag:
+    print("No <video> tag found on the page.")
+    exit()
+
+# Try to get the video source
+source_tag = video_tag.find('source')
+video_url = source_tag['src'] if source_tag else video_tag['src']
+
+if not video_url.startswith("http"):
+    # If the URL is relative, make it absolute
+    from urllib.parse import urljoin
+    video_url = urljoin(url, video_url)
+
+print(f"Video URL found: {video_url}")
+
+# Step 3: Download the video using yt-dlp
+output_file = "downloaded_video.mp4"
+
+ydl_opts = {
+    'format': 'bestvideo+bestaudio/best',
+    'outtmpl': output_file,
+    'merge_output_format': 'mp4',
+}
+
+with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    ydl.download([video_url])
+
+print(f"Video downloaded successfully as {output_file}")
