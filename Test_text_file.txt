@@ -1,9 +1,85 @@
-def clean_contract_code(value):
-    if isinstance(value, str):
-        # Remove non-ASCII characters
-        return re.sub(r'[^\x00-\x7F]+', '', value)
-    return value
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time, os
 
-# Apply to 'contract_code' column
-df['contract_code'] = df['contract_code'].apply(clean_contract_code)
+# ===============================
+# CONFIGURATION
+# ===============================
+DCN_LIST = ["DCN12345", "DCN56789", "DCN98765"]   # Replace with your DCN numbers
+FILENET_URL = "https://your-filenet-url.com"       # Filenet login or viewer URL
+DOWNLOAD_DIR = r"C:\Filenet_PDFs"                  # Your preferred download location
+
+# ===============================
+# SELENIUM SETUP
+# ===============================
+options = webdriver.ChromeOptions()
+options.add_argument("--start-maximized")
+prefs = {
+    "download.default_directory": DOWNLOAD_DIR,
+    "download.prompt_for_download": False,
+    "plugins.always_open_pdf_externally": True
+}
+options.add_experimental_option("prefs", prefs)
+
+driver = webdriver.Chrome(options=options)
+wait = WebDriverWait(driver, 30)
+
+# ===============================
+# OPEN FILENET
+# ===============================
+driver.get(FILENET_URL)
+
+# TODO: If Filenet needs login, handle it here
+# wait.until(EC.presence_of_element_located((By.ID, "username"))).send_keys("your_user")
+# driver.find_element(By.ID, "password").send_keys("your_password")
+# driver.find_element(By.ID, "loginButton").click()
+
+# ===============================
+# MAIN LOOP
+# ===============================
+for dcn in DCN_LIST:
+    try:
+        print(f"Processing DCN: {dcn}")
+
+        # 1️⃣ Wait for search bar, clear, and enter DCN number
+        search_box = wait.until(EC.presence_of_element_located((By.ID, "searchInput")))  # Change ID
+        search_box.clear()
+        search_box.send_keys(dcn)
+
+        # 2️⃣ Click search / retrieve button
+        search_btn = driver.find_element(By.ID, "searchButton")  # Change ID to actual locator
+        search_btn.click()
+
+        # 3️⃣ Wait for document or image viewer to load
+        wait.until(EC.presence_of_element_located((By.XPATH, "//div[contains(@class,'document-viewer')]")))
+
+        # 4️⃣ Click "Download as PDF" or "Export" button
+        download_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Download') or contains(text(),'Export')]")))
+        download_btn.click()
+
+        # 5️⃣ Wait for download to complete
+        time.sleep(5)
+
+        # 6️⃣ Rename file to DCN.pdf (optional)
+        for f in os.listdir(DOWNLOAD_DIR):
+            if f.endswith(".pdf"):
+                old = os.path.join(DOWNLOAD_DIR, f)
+                new = os.path.join(DOWNLOAD_DIR, f"{dcn}.pdf")
+                if not os.path.exists(new):
+                    os.rename(old, new)
+                    break
+
+        print(f"✅ Download complete for {dcn}")
+
+    except Exception as e:
+        print(f"❌ Error with {dcn}: {e}")
+        continue
+
+# ===============================
+# CLOSE
+# ===============================
+driver.quit()
+print("🎯 All DCNs processed successfully.")
 
