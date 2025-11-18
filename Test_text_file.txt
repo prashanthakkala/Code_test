@@ -1,27 +1,66 @@
-import pandas as pd
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
 
-# ---- MAIN DF ----
-main_df = pd.DataFrame({
-    'MsgID': [101, 102, 103, 104],
-    'Name': ['A', 'B', 'C', 'D']
-})
+driver = webdriver.Chrome()
+driver.get("<your_starting_url>")
 
-# ---- ADD NEW COLUMNS (EMPTY) ----
-new_cols = ['Status', 'Score', 'Remarks']
-for col in new_cols:
-    main_df[col] = None    # or np.nan
+docLocation = ""
+loopOut = False
 
-# ---- FOR LOOP TO INSERT VALUES ----
-for index, row in main_df.iterrows():
+# Page Source Check
+if "doclistHD" in driver.page_source:
+    table = driver.find_element(By.ID, "doclistHD")
+    rows = table.find_elements(By.TAG_NAME, "tr")
 
-    # Example: generate values using loop logic
-    status_val = "OK" if row['MsgID'] % 2 == 0 else "PENDING"
-    score_val = row['MsgID'] * 10
-    remarks_val = f"Processed {row['Name']}"
+    for row in rows:
+        tds = row.find_elements(By.TAG_NAME, "td")
+        for td in tds:
+            try:
+                a = td.find_element(By.TAG_NAME, "a")
+                if "viewdocWithMimeTypeAndDocId" in a.get_attribute("href"):
+                    docLocation = a.get_attribute("href")
+                    loopOut = True
+                    break
+            except:
+                pass
+        
+        if loopOut:
+            break
 
-    # Insert into the new columns
-    main_df.at[index, 'Status'] = status_val
-    main_df.at[index, 'Score'] = score_val
-    main_df.at[index, 'Remarks'] = remarks_val
+# Extract document ID from URL
+pFrom = docLocation.index("(") + 1
+pTo = docLocation.rindex(")")
+result = docLocation[pFrom:pTo]
 
-print(main_df)
+# Cleanup
+result = result.replace("'", "").replace("(", "").replace(")", "")
+arrResult = result.split(",")
+
+# Build new document URL
+docURL = f"https://fnp8aeprod.elevancehealth.com/CONTENTONLY/wcmViewer.jsp?document={arrResult[0]}&objects..."
+
+# Open final document URL
+driver.get(docURL)
+time.sleep(7)
+
+# Click Save/Download button
+save_btn = WebDriverWait(driver, 20).until(
+    EC.element_to_be_clickable((By.ID, "nav_ecm_widget_virtualViewer_ViewoneHTMLViewer_1-savefile"))
+)
+save_btn.click()
+
+# Move file (user function)
+movefiles(DCN)
+
+driver.quit()
+
+# Split file (user function)
+splitFile = SplitFile()
+splitFile.Split(newfilepath, DCN)
+
+newfilepath = ""
+filespath = ""
+filepath = ""
