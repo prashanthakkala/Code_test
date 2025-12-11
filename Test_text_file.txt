@@ -7,13 +7,19 @@
 
     <h2>Run Python main() Function</h2>
 
+    <!-- Button to run Python code -->
     <form action="/run" method="POST">
-        <button type="submit">Run Python Code</button>
+        <button type="submit" style="padding: 10px 20px; font-size: 16px;">
+            Run Code
+        </button>
     </form>
 
+    <!-- Show result -->
     {% if result %}
         <h3>Output:</h3>
-        <p>{{ result }}</p>
+        <div style="border:1px solid #ccc; padding:10px; width:300px;">
+            {{ result }}
+        </div>
     {% endif %}
 
 </body>
