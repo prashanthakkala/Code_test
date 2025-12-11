@@ -1,16 +1,20 @@
-from flask import Flask, render_template, request
-from your_script import main
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Run Python Code</title>
+</head>
+<body>
 
-app = Flask(__name__)
+    <h2>Run Python main() Function</h2>
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+    <form action="/run" method="POST">
+        <button type="submit">Run Python Code</button>
+    </form>
 
-@app.route("/run", methods=["POST"])
-def run_python():
-    output = main()  # call your main() function
-    return render_template("index.html", result=output)
+    {% if result %}
+        <h3>Output:</h3>
+        <p>{{ result }}</p>
+    {% endif %}
 
-if __name__ == "__main__":
-    app.run(debug=True)
+</body>
+</html>
