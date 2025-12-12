@@ -1,26 +1,24 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Run Python Code</title>
-</head>
-<body>
+from flask import Flask, render_template, request
+from your_script import main, claim_check
 
-    <h2>Run Python main() Function</h2>
+app = Flask(__name__)
 
-    <!-- Button to run Python code -->
-    <form action="/run" method="POST">
-        <button type="submit" style="padding: 10px 20px; font-size: 16px;">
-            Run Code
-        </button>
-    </form>
+@app.route("/")
+def index():
+    return render_template("index.html")
 
-    <!-- Show result -->
-    {% if result %}
-        <h3>Output:</h3>
-        <div style="border:1px solid #ccc; padding:10px; width:300px;">
-            {{ result }}
-        </div>
-    {% endif %}
+@app.route("/run", methods=["POST"])
+def run_code():
+    action = request.form.get("action")
 
-</body>
-</html>
+    if action == "main":
+        result = main()
+    elif action == "claim_check":
+        result = claim_check()
+    else:
+        result = "Invalid action"
+
+    return render_template("index.html", result=result)
+
+if __name__ == "__main__":
+    app.run(debug=True)
