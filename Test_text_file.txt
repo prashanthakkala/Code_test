@@ -1,44 +1,153 @@
-from flask import Flask, render_template
-from your_script import main
+# sample_code.py
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+
+driver = None
+CHROME_DRIVER_PATH = "path/to/chromedriver"   # <-- change this
+
+def start_driver():
+    global driver
+    if driver is None:
+        service = Service(CHROME_DRIVER_PATH)
+        options = webdriver.ChromeOptions()
+        # options.add_argument("--headless")
+        driver = webdriver.Chrome(service=service, options=options)
+    return driver
+
+
+def main():
+    """Open driver → login → reach dashboard."""
+    d = start_driver()
+    try:
+        d.get("https://your-login-page.com")
+
+        # Example login steps
+        d.find_element(By.ID, "username").send_keys("your-username")
+        d.find_element(By.ID, "password").send_keys("your-password")
+        d.find_element(By.ID, "loginBtn").click()
+
+        return "Automation started"
+
+    except Exception as e:
+        return f"Main failed: {e}"
+
+
+def process_claim():
+    """Use same driver to process claim."""
+    global driver
+    if driver is None:
+        return "Error: Run main() first."
+
+    try:
+        d = driver
+        d.get("https://your-site.com/process")
+        # your automation here
+        return "Process Claim Completed"
+
+    except Exception as e:
+        return f"Process failed: {e}"
+
+
+def check_claim():
+    """Use same driver to check claim."""
+    global driver
+    if driver is None:
+        return "Error: Run main() first."
+
+    try:
+        d = driver
+        d.get("https://your-site.com/check")
+        # your automation here
+        return "Check Claim Completed"
+
+    except Exception as e:
+        return f"Check failed: {e}"
+
+==========================================
+
+from flask import Flask, render_template, redirect, request, url_for
+import sample_code as sc
 
 app = Flask(__name__)
 
-@app.route("/")
-def index():
+
+@app.route('/')
+def home():
     return render_template("index.html")
 
-@app.route("/run", methods=["POST"])
-def run_code():
-    result = main()   # only main() runs everything
-    return render_template("index.html", result=result)
+
+@app.route('/start_automation', methods=['POST'])
+def start_automation():
+    msg = sc.main()
+    return redirect(url_for("steps_page", msg=msg))
+
+
+@app.route('/steps')
+def steps_page():
+    message = request.args.get("msg", "")
+    return render_template("steps.html", message=message)
+
+
+@app.route('/run_action', methods=['POST'])
+def run_action():
+    action = request.form.get("action")
+
+    if action == "process":
+        result = sc.process_claim()
+    elif action == "check":
+        result = sc.check_claim()
+    else:
+        result = "Invalid action"
+
+    return render_template("steps.html", message=result)
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True) 
 
-
+==========================================
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Run Selenium Script</title>
+    <title>Automation Start</title>
 </head>
-<body>
+<body style="font-family: Arial; padding: 30px;">
 
-    <h2>Run Full Automation</h2>
+    <h2>Start Automation</h2>
 
-    <!-- Run main() only -->
-    <form action="/run" method="POST">
-        <button type="submit" style="padding:10px 20px; font-size:18px;">
-            Run Automation
-        </button>
+    <form action="/start_automation" method="post">
+        <button style="padding: 10px 25px; font-size: 18px;">Start Automation</button>
     </form>
-
-    {% if result %}
-        <h3>Output:</h3>
-        <div style="border:1px solid #ccc; padding:10px;">
-            {{ result }}
-        </div>
-    {% endif %}
 
 </body>
 </html>
+==============================================
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Automation Steps</title>
+</head>
+<body style="font-family: Arial; padding: 30px;">
 
+    <h2>Next Steps</h2>
+
+    {% if message %}
+    <p style="padding:12px; background:#f0f0f0; width:300px;">{{ message }}</p>
+    {% endif %}
+
+    <form action="/run_action" method="post">
+        <input type="hidden" name="action" value="process">
+        <button style="padding:10px 25px; font-size:18px;">Process Claim</button>
+    </form>
+
+    <br>
+
+    <form action="/run_action" method="post">
+        <input type="hidden" name="action" value="check">
+        <button style="padding:10px 25px; font-size:18px;">Check Claim</button>
+    </form>
+
+</body>
+</html>
+=====================================
