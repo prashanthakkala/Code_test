@@ -1,38 +1,34 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Run Python Functions</title>
-</head>
-<body>
+# your_script.py
 
-    <h2>Run Python Functions</h2>
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
 
-    <!-- Button 1: Run main() -->
-    <form action="/run" method="POST">
-        <input type="hidden" name="action" value="main">
-        <button type="submit" style="padding:10px 20px; font-size:16px;">
-            Run main()
-        </button>
-    </form>
+def process_function(driver):
+    # Your selenium steps here
+    # Example:
+    driver.get("https://example.com")
+    return "Process function executed."
 
-    <br>
+def claim_check(driver):
+    # Your selenium claim check steps here
+    return "Claim check executed."
 
-    <!-- Button 2: Run claim_check() -->
-    <form action="/run" method="POST">
-        <input type="hidden" name="action" value="claim_check">
-        <button type="submit" style="padding:10px 20px; font-size:16px;">
-            Run claim_check()
-        </button>
-    </form>
+def main():
+    # Initialize WebDriver ONCE here
+    service = Service("path/to/chromedriver")
+    driver = webdriver.Chrome(service=service)
 
-    <br><br>
+    try:
+        # Call nested functions using the SAME driver
+        step1 = process_function(driver)
+        step2 = claim_check(driver)
 
-    {% if result %}
-        <h3>Result:</h3>
-        <div style="border:1px solid #ccc; padding:10px;">
-            {{ result }}
-        </div>
-    {% endif %}
+        return f"{step1} | {step2}"
 
-</body>
-</html>
+    finally:
+        driver.quit()
+
+
+if __name__ == "__main__":
+    print(main())
