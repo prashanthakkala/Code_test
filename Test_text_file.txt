@@ -1,34 +1,44 @@
-# your_script.py
+from flask import Flask, render_template
+from your_script import main
 
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
+app = Flask(__name__)
 
-def process_function(driver):
-    # Your selenium steps here
-    # Example:
-    driver.get("https://example.com")
-    return "Process function executed."
+@app.route("/")
+def index():
+    return render_template("index.html")
 
-def claim_check(driver):
-    # Your selenium claim check steps here
-    return "Claim check executed."
-
-def main():
-    # Initialize WebDriver ONCE here
-    service = Service("path/to/chromedriver")
-    driver = webdriver.Chrome(service=service)
-
-    try:
-        # Call nested functions using the SAME driver
-        step1 = process_function(driver)
-        step2 = claim_check(driver)
-
-        return f"{step1} | {step2}"
-
-    finally:
-        driver.quit()
-
+@app.route("/run", methods=["POST"])
+def run_code():
+    result = main()   # only main() runs everything
+    return render_template("index.html", result=result)
 
 if __name__ == "__main__":
-    print(main())
+    app.run(debug=True)
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Run Selenium Script</title>
+</head>
+<body>
+
+    <h2>Run Full Automation</h2>
+
+    <!-- Run main() only -->
+    <form action="/run" method="POST">
+        <button type="submit" style="padding:10px 20px; font-size:18px;">
+            Run Automation
+        </button>
+    </form>
+
+    {% if result %}
+        <h3>Output:</h3>
+        <div style="border:1px solid #ccc; padding:10px;">
+            {{ result }}
+        </div>
+    {% endif %}
+
+</body>
+</html>
+
