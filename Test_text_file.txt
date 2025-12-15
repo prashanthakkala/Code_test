@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Claim Status</title>
-
+    <title>FHPS Application</title>
     <style>
         body {
             margin: 0;
@@ -22,34 +21,84 @@
             font-weight: bold;
         }
 
-        .content {
+        .center {
             flex: 1;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        .status-box {
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 18px 40px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">FHPS APPLICATION</div>
+
+<div class="center">
+    <form action="/run" method="POST">
+        <button type="submit" class="btn">Process Claim</button>
+    </form>
+</div>
+
+</body>
+</html>
+================
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Claim Status</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            background-color: #f4f6f9;
+        }
+
+        .header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .box {
             background-color: white;
             padding: 30px;
             border-radius: 8px;
-            text-align: center;
             width: 400px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
         }
 
-        .back-btn {
-            margin-top: 20px;
+        .btn {
             background-color: #007bff;
             color: white;
-            padding: 10px 25px;
+            padding: 14px 30px;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
-        }
-
-        .back-btn:hover {
-            background-color: #0056b3;
         }
     </style>
 </head>
@@ -58,16 +107,65 @@
 
 <div class="header">CLAIM STATUS</div>
 
-<div class="content">
-    <div class="status-box">
-        <h3>Status Result</h3>
-        <p>{{ status_result }}</p>
+<div class="center">
+    <div class="box">
 
-        <button class="back-btn" onclick="window.location.href='/'">
+        {% if status_result %}
+            <p><strong>{{ status_result }}</strong></p>
+        {% else %}
+            <p>Click below to check claim status</p>
+        {% endif %}
+
+        <form action="/status" method="POST">
+            <button type="submit" class="btn">Check Status</button>
+        </form>
+
+        <br>
+        <button class="btn" onclick="window.location.href='/'">
             Back to Home
         </button>
+
     </div>
 </div>
 
 </body>
 </html>
+===========
+
+
+from flask import Flask, render_template, redirect, url_for
+
+# IMPORT YOUR BUSINESS LOGIC
+from FHPS import main
+from FHPSCLAIMCHECK import claim_check
+
+app = Flask(__name__)
+
+# Home page
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+
+# STEP 1: Process Claim
+@app.route('/run', methods=['POST'])
+def run():
+    # Call main claim logic
+    main()
+
+    # After processing, go to status page
+    return redirect(url_for('status'))
+
+
+# STEP 2: Status page (GET + POST)
+@app.route('/status', methods=['GET', 'POST'])
+def status():
+    if request.method == 'POST':
+        status_result = claim_check()
+        return render_template('status.html', status_result=status_result)
+
+    return render_template('status.html')
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
