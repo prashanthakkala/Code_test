@@ -4,12 +4,39 @@
     <title>FHPS Application</title>
 
     <style>
-        .btn-claim {
-            background-color: #007bff; /* Blue */
+        body {
+            margin: 0;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Blue header line */
+        .header {
+            background-color: #007bff;
             color: white;
-            padding: 12px 25px;
+            padding: 15px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        /* Center content */
+        .center-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Button styling */
+        .btn-claim {
+            background-color: #007bff;
+            color: white;
+            padding: 16px 35px;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             font-size: 16px;
             cursor: pointer;
         }
@@ -17,35 +44,26 @@
         .btn-claim:hover {
             background-color: #0056b3;
         }
-
-        .result {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f1f1f1;
-            border-radius: 5px;
-        }
     </style>
 </head>
 
 <body>
 
-<h2>FHPS Application</h2>
-
-<!-- Form that calls /run -->
-<form action="/run" method="POST">
-    <input type="hidden" name="action" value="main">
-
-    <button type="submit" class="btn-claim">
-        Claim Check
-    </button>
-</form>
-
-{% if result %}
-<div class="result">
-    <h3>Result:</h3>
-    <p>{{ result }}</p>
+<!-- Blue highlighted heading -->
+<div class="header">
+    FHPS APPLICATION
 </div>
-{% endif %}
+
+<!-- Centered button -->
+<div class="center-content">
+    <form action="/run" method="POST">
+        <input type="hidden" name="action" value="main">
+
+        <button type="submit" class="btn-claim">
+            Claim Process
+        </button>
+    </form>
+</div>
 
 </body>
 </html>
