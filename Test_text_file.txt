@@ -13,38 +13,24 @@
             background-color: #f4f6f9;
         }
 
-        /* Header */
         .header {
             background-color: #007bff;
             color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 15px;
+            text-align: center;
             font-size: 22px;
             font-weight: bold;
         }
 
-        .home-btn {
-            background-color: white;
-            color: #007bff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        /* Center */
         .center-content {
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            gap: 30px;
+            gap: 25px;
         }
 
-        /* Cards */
         .cards {
             display: flex;
             gap: 20px;
@@ -58,7 +44,6 @@
             text-align: center;
             cursor: pointer;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
         }
 
         .card:hover {
@@ -70,7 +55,6 @@
             margin-bottom: 8px;
         }
 
-        /* Button */
         .btn-claim {
             background-color: #007bff;
             color: white;
@@ -84,40 +68,16 @@
         .btn-claim:hover {
             background-color: #0056b3;
         }
-
-        /* Result */
-        .result {
-            margin-top: 20px;
-            background-color: white;
-            padding: 15px;
-            border-radius: 6px;
-            width: 60%;
-            text-align: center;
-        }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding: 10px;
-            background-color: #e9ecef;
-            font-size: 13px;
-            color: #666;
-        }
     </style>
 </head>
 
 <body>
 
-<div class="header">
-    FHPS APPLICATION
-    <button class="home-btn">Home</button>
-</div>
+<div class="header">FHPS APPLICATION</div>
 
 <div class="center-content">
 
-    <!-- Cards -->
     <div class="cards">
-        <!-- Claim Status CARD -->
         <div class="card" onclick="window.location.href='/status'">
             <h4>Claim Status</h4>
             <p>Check claim progress</p>
@@ -127,45 +87,18 @@
             <h4>Eligibility</h4>
             <p>Verify patient eligibility</p>
         </div>
-
-        <div class="card">
-            <h4>Reports</h4>
-            <p>View summaries</p>
-        </div>
     </div>
 
-    <!-- Claim Process Button -->
     <form action="/run" method="POST">
         <input type="hidden" name="action" value="main">
-        <button type="submit" class="btn-claim">
-            Claim Process
-        </button>
+        <button type="submit" class="btn-claim">Claim Process</button>
     </form>
 
     {% if result %}
-    <div class="result">
-        <strong>{{ result }}</strong>
-    </div>
+    <p><strong>{{ result }}</strong></p>
     {% endif %}
 
 </div>
 
-
-
-<div class="footer">
-    © 2025 FHPS | Internal Use Only
-</div>
-
 </body>
 </html>
-
-
-=========
-
-@app.route('/status')
-def status():
-    # Run your claim status script / logic here
-    status_result = run_claim_status_script()
-
-    return render_template('template.html', result=status_result)
-
