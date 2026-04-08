@@ -1,5 +1,6 @@
+
 const accountSid = 'AC3765a411d88d6cf2a956d507f43b0d5a';
-const authToken = '39fd5d1c428230ae28df69a0601babf9';
+const authToken = '[AuthToken]';
 const client = require('twilio')(accountSid, authToken);
 client.studio.v2.flows('FW03a11f18f6ef7c971e787e93de11027f')
     .executions
